@@ -1,0 +1,124 @@
+TP 1 SDA - Warung Ikan Magetan
+
+Tugas Pemrograman ini secara umum adalah interaksi antara toko dan pelanggan
+
+Toko mengutamakan melayani pembelian pelanggan dengan:
+BUDGET PALING TINGGI, KESABARAN PALING SEDIKIT, ID lebih kecil
+
+Kesabaran
+Setiap pelanggan punya budget, kesabaran, dan IDnya masing-masing. Jika pelanggan memiliki kesabaran sebesar t, maka pelanggan akan pergi dari toko setelah menunggu t menit. Contoh, apabila pelanggan dengan kesabaran t = 3 masuk pada menit 1, maka pelanggan akan masih ada di toko pada menit ke-1, 2, dan 3. Namun sudah pergi dari toko pada menit ke (1+t) = 4.
+
+Budget
+Pelanggan akan selalu membeli ikan termahal sesuai budget mereka (Selisih Harga terkecil antara budget pelanggan dengan ikan yang ada). Jika budget tidak pas dengan Harga ikan, toko akan memberi kembalian yang sesuai (budget pelanggan dikurang Harga ikan).
+
+Toko (Warung Ikan Magetan)
+Penjual memiliki M produk baru (belum dirilis/dijual). Dik produk ke-i memiliki harga Hi serta memberi nilai kebahagiaan sebesar Vi.
+
+Pelanggan
+Pelanggan berandai punya uang sebesar X, ingin diketahui berapa total nilai kebahagiaan malsimal didapat dengan uang sebesar X tersebut. Karena hanya "berandai" jumlah uang pelanggan sebenarnya (budget)tidak terpengaruh.
+
+Toko (Warung Ikan Magetan)
+Note: Toko membuat aturan pelanggan tidak boleh membeli tiga souvenir berturut-turut. (tidak dapat membeli souvenir ke-x, x+1, x+2 dalam satu kali pembelian)
+
+Toko (Warung Ikan Magetan)
+Toko memiliki siste diskon. Toko memiliki "tumpukan" (stack) diskon dengan aturan berikut:
+- Jika ada pelanggan membeli ikan dan budgetnya tidak pas, maka toko akan menambah kupon diskon senilai kembalian pembelian dan kupon tersebut ditaruh di atas tumpukan kupon diskon.
+- jika ada pelanggan yang membeli ikan dengan uang pas, maka toko akan menerapkan potongan harga dari kupon diskon yang ada di paling atas tumpukan untuk pembelian dengan uang pas tersebut. Perhatikan bahwa pelanggan memilih ikan terlebih dahulu, kemudian diskon baru akan diterapkan pada pembelian dengan 
+ikan yang dipilih tersebut. harga setelah potongan diskon hanya bisa mengubah harga menjadi paling sedikit 1. Contoh: apabila pelanggan membeli ikan seharga x dan mendapat diskon seharga y, maka pelanggan tersebut hanya perlu membayar sebesar max(1,x — y). Apabila tidak ada satupun kupon diskon yang tersedia, maka pelanggan tidak mendapatkan diskon apapun.
+
+Pada setiap menitnya, tepat satu dari aktivitas berikut akan terjadi. 
+1. A[BUDGET_PELANGGAN] [TINGKAT_KESABARAN_PELANGGAN] 
+Pelanggan baru dengan ID <JUMLAH_PENGUNJUNG_YANG_TELAH_DATANG>(dengan kata lain, ID pengunjung bersifat auto-increment, dimulai dari 0) masuk ke toko dengan budget sebesar BUDGET_PELANGGAN dan tingkat kesabaran sebesar <TINGKAT_KESABARAN_PELANGGAN> menit. Keluarkan ID dari pelanggan tersebut.
+
+2. S[HARGA_DICARI] 
+Pelanggan ingin sekadar melihat-lihat mana ikan yang harganya paling dekat dengan <HARGA_DICARI>. Keluarkan sebuah bilangan bulat yang menyatakan selisih minimum antara <HARGA_DICARI> dengan semua harga ikan yang ada di toko. 
+
+3. L[ID_PELANGGAN] 
+Pelanggan dengan ID <ID_PELANGGAN> keluar dari antrian. Keluarkan uang dari pelanggan tersebut. Jika tidak ada pelanggan dengan ID <ID_PELANGGAN> pada antrian (baik itu tidak pernah mengantri ataupun sudah keluar dari antrian), keluarkan -1.
+
+4. D[DISKON] 
+Sofita menambahkan kupon diskon senilai DISKON di atas tumpukan kupon diskon. Keluarkan banyak kupon diskon di tumpukan diskon. 
+
+5. B 
+Layani pembelian pelanggan di antrian terdepan saat ini. Pelanggan akan membeli ikan termahal yang dapat dibeli dengan budget yang dimilikinya (apabila diskonnya lebih besar atau sama dengan harga yang perlu dibayar, maka pelanggan membayar sebesar 1). Perhatikan bahwa pelanggan yang telah dilayani pembeliannya masih tetap mengantri dengan uang yang tersisa dan tingkat kesabaran seperti semula (tingkat kesabarannya di-reset sesuai ketika pelanggan tersebut mulai mengantri). Apabila sudah tidak ada pelanggan lagi yang mengantri, keluarkan -1. Apabila 
+ternyata tidak ada ikan yang mampu dibeli oleh pelanggan terdepan, maka keluarkan ID dari pelanggan tersebut, kemudian pelanggan tersebut akan meninggalkan antrian. Keluarkan uang kembalian yang perlu diberikan (setelah 
+membeli ikan). 
+
+6. O [TIPE_QUERY] [X] 
+Toko ingin mengetahui apabila saat ini pelanggan memiliki uang sebanyak X, berapa 
+nilai kebahagiaan maksimum yang dapat diraih oleh pelanggan? Keluaran akan 
+bergantung pada nilai dari <TIPE_QUERY>:
+
+- TIPE_QUERY = 1: Keluarkan sebuah bilangan berupa nilai kebahagiaan 
+maksimum yang bisa didapat oleh pelanggan dengan nilai uang X.
+
+Note: Uang X adalah budget pelanggan (pada pembelian souvenir budged tidak berkurang, karena souvenir hanya dapat dikira-kira maks kebahagiaan bisa berapa (pakai dynamic programming agar efisien)).
+
+- TIPE_QUERY = 2: Keluarkan nilai kebahagiaan maksimum yang bisa didapat pelanggan tersebut, Keluarkan index pengambilan suvenir (secara ascending) yang menghasilkan nilai kebahagiaan maksimum. Apabila ada lebih dari satu 
+kemungkinan, keluarkan susunan index pengambilan yang minimum secara leksikografis*.
+
+Note: Perhatikan bahwa sesuai dengan prasyarat yang diinginkan toko
+
+"Note: Toko membuat aturan pelanggan tidak boleh membeli tiga souvenir berturut-turut. (tidak dapat membeli souvenir ke-x, x+1, x+2 dalam satu kali pembelian)"
+
+sebelumnya, pelanggan tidak diperbolehkan untuk mengambil tiga suvenir secara berurutan.
+
+Note: suatu urutan A[l...N] dikatakan lebih kecil secara leksikografis dibanding urutan B[1...N] apabila terdapat index i dimana: 
+1 =< i =< N
+Untuk setiap j dimana 1 =< j < i, A[j] = B[j] 
+A[i] < B[i] 
+
+Dengan kata lain, A lebih kecil secara leksikografis daripada B apabila pada posisi pertama dimana kedua elemen A dan B berbeda, nilai A pada posisi tersebut lebih kecil dari nilai B pada posisi tersebut. 
+Sebagai contoh, A = [1 , 3, 2, 1, 2, 3] lebih kecil secara leksikografis. daripada B = [1, 3, 2, 1, 3, 1] Karena pada 4 elemen pertama, elemen pada A bernilai sama dengan elemen pada B. Namun, elemen ke-4 pada A (bernilai 2) lebih kecil daripada elemen ke-4 pada B (bernilai 3).
+
+Format Masukkan:
+- Baris pertama berisi tiga bilangan yaitu N, M, dan Q yang dipisahkan oleh sebuah 
+spasi. N menyatakan banyaknya ikan, M menyatakan banyaknya suvenir, Hi menyatakan banyaknya aktivitas yang akan dilakukan. 
+- Baris kedua berisi N harga ikan Pi yang masing-masing dipisahkan oleh sebuah spasi. 
+- Baris ketiga berisi M harga suvenir Hi, yang masing-masing dipisahkan oleh sebuah spasi. 
+- Baris keempat berisi M nilai kebahagiaan suvenir Vi. yang masing-masing dipisahkan oleh sebuah spasi. 
+- Q baris selanjutnya berisi aktivitas yang sesuai dengan format aktivitas yang telah dijabarkan sebelumnya.
+
+Format Keluaran:
+- Keluaran dari perintah A 
+Keluarkan ID dari pelanggan baru tersebut. 
+- Keluaran dari perintah S 
+Keluarkan sebuah bilangan bulat yang menyatakan selisih minimum antara <HARGA_DICARI> dengan semua kemungkinan harga ikan yang ada. 
+- Keluaran dari perintah L 
+Keluarkan uang dari pelanggan yang keluar dari antrian. 
+Keluarkan -1 jika pelanggan tersebut tidak sedang berada di dalam antrian. 
+- Keluaran dari perintah D 
+Keluarkan banyak diskon di tumpukan diskon. 
+- Keluaran dari perintah B 
+Apabila sudah tidak ada pelanggan lagi yang mengantri, keluarkan -1. 
+Keluarkan uang kembalian yang perlu diberikan (setelah membeli ikan). 
+- Keluaran dari perintah O 
+- Jika TIPE_QUERY = 1, keluarkan sebuah bilangan berupa nilai kebahagiaan maksimum yang bisa didapat oleh pelanggan dengan kembaliannya. 
+- Jika TIPE_QUERY = 2, keluarkan nilai kebahagiaan maksimum yang bisa didapat pelanggan, dan juga keluarkan index pengambilan suvenir (ascending) yang menghasilkan nilai kebahagiaan maksimum. Apabila ada lebih dari satu 
+kemungkinan, keluarkan susunan index pengambilan yang minimum secara leksikografis.
+
+Batasan 
+- 1 =< N,M,Q =< 10^5
+- 1 =< Pi,Vi =< 10^9
+- 1 =< Hi =< 10^5
+- Harga ikan dijamin terurut dari kecil ke besar
+
+Batasan Kueri Aktivitas 
+- Pada kueri A, dijamin 
+1 =< BUDGET _PELANGGAN =< 10^9
+1 =< TINGKAT_KESABARAN PELANGGAN =< 10^5
+ 
+- Pada kueri S, dijamin 
+1 =< HARGA_DICARI =< 10^9
+
+- Pada kueri L, dijamin 
+1 =<ID_PELANGGAN =< 10^9
+
+- Pada kueri D, dijamin 
+1 =< DISKON =< 10^9
+
+- Pada kueri O, dijamin 
+TIPE_QUERY = 1 atau TIPE_QUERY = 2 
+1 =< X =< 10^5
+1 =< M*X =< 10^5 
+Kemunculan kueri O 2 tidak lebih dari 50 kali.
