@@ -14,6 +14,7 @@ public class TP1 {
     private static List<Long> fishPrices = new ArrayList<>();
     private static List<Integer> souvenirPrices = new ArrayList<>();
     private static List<Integer> souvenirValues = new ArrayList<>();
+    private static List<Customer> customerData = new ArrayList<>();
     private static Queue<Customer> customerQueue = new PriorityQueue<>(new CustomerComparator());
     private static Stack<Long> discountCoupons = new Stack<>();
     private static int customerIdCounter = 0;
@@ -60,8 +61,8 @@ public class TP1 {
         switch (operation.charAt(0)) {
             case 'A': // Add a new customer
                 long budget = in.nextLong();
-                long patience = in.nextLong();
-                addCustomer(budget, patience);
+                int patience = in.nextInteger();
+                addCustomer(budget, patience, true);
                 break;
 
             case 'S': // Find the closest fish price
@@ -70,7 +71,7 @@ public class TP1 {
                 break;
 
             case 'L': // Remove a customer by ID
-                int customerId = in.nextInteger();
+                long customerId = in.nextLong();
                 removeCustomer(customerId);
                 break;
 
@@ -94,9 +95,10 @@ public class TP1 {
         }
     }
 
-    // Adds a new customer with the given budget and patience
-    private static void addCustomer(long budget, long patience) {
-        Customer newCustomer = new Customer(customerIdCounter++, budget, patience, patience);
+    // Method A = Adds a new customer with the given budget and patience
+    private static void addCustomer(long budget, long patience, boolean inQueue) {
+        Customer newCustomer = new Customer(customerIdCounter++, budget, patience, patience, inQueue);
+        customerData.add(newCustomer);
         customerQueue.add(newCustomer);
         out.println(newCustomer.id); // Output the ID of the new customer
     }
@@ -109,23 +111,19 @@ public class TP1 {
         for (Customer customer : customerQueue) {
             customer.patience--;
 
-            // Only re-add customers who still have patience left
+            // Remove customers whose patience has run out
             if (customer.patience == 0) {
                 tempList.add(customer);
+                customer.inQueue = false; // Not in queue anymore
             }
         }
 
-        // Re-add remaining customers back to the queue
+        // Remove the customers whose patience ran out
         customerQueue.removeAll(tempList);
     }
 
-    // Implements finding the closest fish price using binary search.
+    // Method S = Implements finding the closest fish price using binary search.
     private static void findClosestFishPrice(Long price) {
-        if (fishPrices.isEmpty()) {
-            System.out.println("No fish prices available");
-            return;
-        }
-
         int left = 0;
         int right = fishPrices.size() - 1;
 
@@ -156,39 +154,24 @@ public class TP1 {
         out.println(Math.abs(closestPrice - price));
     }
 
-    // Implements removing a customer from the queue by ID.
-    private static void removeCustomer(int customerId) {
-        boolean found = false;
+    // Method L = Implements removing a customer from the queue by ID.
+    private static void removeCustomer(long customerId) {
         long remainingBudget = -1;
 
-        // Use a temporary list to hold the customers
-        List<Customer> tempList = new ArrayList<>();
-
-        // Transfer customers from the queue to the temporary list, checking each one
-        while (!customerQueue.isEmpty()) {
-            Customer current = customerQueue.poll();
-
-            // Check if this is the customer to be removed
-            if (current.id == customerId) {
-                found = true;
-                remainingBudget = current.budget; // Store the remaining budget of the removed customer
-            } else {
-                tempList.add(current); // Add back to the temporary list if not the target
-            }
-        }
-
-        // Re-add all customers back to the queue
-        customerQueue.addAll(tempList);
-
-        // Output the remaining budget if the customer was found, otherwise output -1
-        if (found) {
+        if (customerId > customerData.size() - 1 || customerId < 0) {
             out.println(remainingBudget);
         } else {
-            out.println(-1);
+            Customer customer = customerData.get((int)customerId);
+            if (customer.inQueue) {
+                remainingBudget = customer.budget;
+                customerQueue.remove(customer);
+                customer.inQueue = false; // Set false (customer went out of the queue)
+            }
+            out.println(remainingBudget); // Output budget if found and removed
         }
     }
 
-    // Adds a discount to the discount stack
+    // Method D = Adds a discount to the discount stack
     private static void addDiscount(Long discount, boolean printSize) {
         discountCoupons.push(discount);
         if (printSize) {
@@ -196,7 +179,7 @@ public class TP1 {
         }
     }
 
-    // Implements serving the next customer in the queue.
+    // Method B = Implements serving the next customer in the queue.
     private static void serveNextCustomer() {
         // Check if there are no customers to serve
         if (customerQueue.isEmpty()) {
@@ -206,6 +189,7 @@ public class TP1 {
     
         // Poll the next customer in line (highest priority based on the comparator)
         Customer customer = customerQueue.poll();
+        customer.inQueue = false;
     
         // Retrieve the original patience value from the map to reset it correctly
         long originalPatience = customer.originalPatience;
@@ -244,11 +228,11 @@ public class TP1 {
                 long discount = discountCoupons.pop();
                 fishPrice = Math.max(1, fishPrice - discount); // Discount applied cannot reduce below 1
             }
-
         } else {
             // Calculate the remaining budget after purchase
             addDiscount(remainingBudget-fishPrice, false);
         }
+
         remainingBudget -= fishPrice;
     
         // Output the remaining budget after purchase
@@ -258,6 +242,7 @@ public class TP1 {
         customer.budget = remainingBudget;
         customer.patience = originalPatience; // Reset to original patience value
         customerQueue.add(customer);
+        customer.inQueue = true;
     }
     
 
@@ -273,12 +258,14 @@ public class TP1 {
         long budget;
         long patience;
         long originalPatience;
+        boolean inQueue;
 
-        public Customer(int id, long budget, long patience, long originalPatience) {
+        public Customer(int id, long budget, long patience, long originalPatience, boolean inQueue) {
             this.id = id;
             this.budget = budget;
             this.patience = patience;
-            this.originalPatience = patience;
+            this.originalPatience = originalPatience;
+            this.inQueue = inQueue;
         }
     }
 
