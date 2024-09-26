@@ -16,7 +16,6 @@ public class TP1 {
     private static List<Integer> souvenirValues = new ArrayList<>();
     private static Queue<Customer> customerQueue = new PriorityQueue<>(new CustomerComparator());
     private static Stack<Long> discountCoupons = new Stack<>();
-    private static Map<Integer, Customer> originalCustomerMap = new HashMap<>();
     private static int customerIdCounter = 0;
 
     public static void main(String[] args) {
@@ -97,12 +96,7 @@ public class TP1 {
 
     // Adds a new customer with the given budget and patience
     private static void addCustomer(long budget, long patience) {
-        // Create and save the original customer data
-        Customer originalCustomer = new Customer(customerIdCounter, budget, patience);
-        originalCustomerMap.put(customerIdCounter, originalCustomer);
-
-        // Add a copy of the customer to the queue for manipulation
-        Customer newCustomer = new Customer(customerIdCounter++, budget, patience);
+        Customer newCustomer = new Customer(customerIdCounter++, budget, patience, patience);
         customerQueue.add(newCustomer);
         out.println(newCustomer.id); // Output the ID of the new customer
     }
@@ -112,18 +106,17 @@ public class TP1 {
         List<Customer> tempList = new ArrayList<>();
 
         // Iterate through each customer in the queue to decrement patience
-        while (!customerQueue.isEmpty()) {
-            Customer customer = customerQueue.poll();
+        for (Customer customer : customerQueue) {
             customer.patience--;
 
             // Only re-add customers who still have patience left
-            if (customer.patience > 0) {
+            if (customer.patience == 0) {
                 tempList.add(customer);
             }
         }
 
         // Re-add remaining customers back to the queue
-        customerQueue.addAll(tempList);
+        customerQueue.removeAll(tempList);
     }
 
     // Implements finding the closest fish price using binary search.
@@ -215,7 +208,7 @@ public class TP1 {
         Customer customer = customerQueue.poll();
     
         // Retrieve the original patience value from the map to reset it correctly
-        long originalPatience = originalCustomerMap.get(customer.id).patience;
+        long originalPatience = customer.originalPatience;
         long remainingBudget = customer.budget;
     
         // Find the most expensive fish the customer can afford using binary search
@@ -265,7 +258,6 @@ public class TP1 {
         customer.budget = remainingBudget;
         customer.patience = originalPatience; // Reset to original patience value
         customerQueue.add(customer);
-        
     }
     
 
@@ -280,11 +272,13 @@ public class TP1 {
         int id;
         long budget;
         long patience;
+        long originalPatience;
 
-        public Customer(int id, long budget, long patience) {
+        public Customer(int id, long budget, long patience, long originalPatience) {
             this.id = id;
             this.budget = budget;
             this.patience = patience;
+            this.originalPatience = patience;
         }
     }
 
