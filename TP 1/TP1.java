@@ -248,12 +248,8 @@ public class TP1 {
         // Apply discount only if the fish price matches the customer's budget exactly
         if (remainingBudget == fishPrice) {
             if (!discountCoupons.isEmpty()) {
-                long discount = discountCoupons.peek();
-                if (fishPrice - discount <= remainingBudget) {
-                    // Apply the discount only if it helps the customer buy the fish affordably
-                    fishPrice = Math.max(1, fishPrice - discount); // Discount applied cannot reduce below 1
-                    discountCoupons.pop(); // Use the discount coupon
-                }
+                long discount = discountCoupons.pop();
+                fishPrice = Math.max(1, fishPrice - discount); // Discount applied cannot reduce below 1
             }
 
         } else {
