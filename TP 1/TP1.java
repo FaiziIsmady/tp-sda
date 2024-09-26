@@ -15,8 +15,8 @@ public class TP1 {
     private static List<Integer> souvenirPrices = new ArrayList<>();
     private static List<Integer> souvenirValues = new ArrayList<>();
     private static Queue<Customer> customerQueue = new PriorityQueue<>(new CustomerComparator());
-    private static Stack<Integer> discountCoupons = new Stack<>();
-    private static Map<Integer, Long> originalPatienceMap = new HashMap<>();
+    private static Stack<Long> discountCoupons = new Stack<>();
+    private static Map<Integer, Customer> originalCustomerMap = new HashMap<>();
     private static int customerIdCounter = 0;
 
     public static void main(String[] args) {
@@ -56,42 +56,35 @@ public class TP1 {
 
     // Processes each operation based on the input
     private static void processOperation(String operation) {
-
+        // Decrement patience at the end of each process operation
         decrementPatience();
-
         switch (operation.charAt(0)) {
-            case 'A': // Aman
-                // Read budget and patience, add customer
+            case 'A': // Add a new customer
                 long budget = in.nextLong();
                 long patience = in.nextLong();
                 addCustomer(budget, patience);
                 break;
 
-            case 'S':
-                // Read desired fish price, find the closest price
+            case 'S': // Find the closest fish price
                 Long price = in.nextLong();
                 findClosestFishPrice(price);
                 break;
 
-            case 'L':
-                // Read customer ID, remove from queue
+            case 'L': // Remove a customer by ID
                 int customerId = in.nextInteger();
                 removeCustomer(customerId);
                 break;
 
-            case 'D':
-                // Read discount value, add to discount stack
-                int discount = in.nextInteger();
-                addDiscount(discount);
+            case 'D': // Add a discount coupon
+                long discount = in.nextLong();
+                addDiscount(discount, true);
                 break;
 
-            case 'B':
-                // Serve the next customer in line
+            case 'B': // Serve the next customer
                 serveNextCustomer();
                 break;
 
-            case 'O':
-                // Read query type and budget, calculate happiness
+            case 'O': // Calculate happiness based on the query
                 int queryType = in.nextInteger();
                 int x = in.nextInteger();
                 calculateHappiness(queryType, x);
@@ -104,15 +97,36 @@ public class TP1 {
 
     // Adds a new customer with the given budget and patience
     private static void addCustomer(long budget, long patience) {
-        // Customer ID is auto-incremented based on the count of incoming customers
+        // Create and save the original customer data
+        Customer originalCustomer = new Customer(customerIdCounter, budget, patience);
+        originalCustomerMap.put(customerIdCounter, originalCustomer);
+
+        // Add a copy of the customer to the queue for manipulation
         Customer newCustomer = new Customer(customerIdCounter++, budget, patience);
         customerQueue.add(newCustomer);
-        originalPatienceMap.put(newCustomer.id, patience); // Save the original patience value
         out.println(newCustomer.id); // Output the ID of the new customer
     }
 
-    // TODO: Implement finding the closest fish price using binary search.
-    // Implements finding the closest fish price using a simple manual binary search.
+    // Decrements patience of all customers by 1 and removes those with patience 0
+    private static void decrementPatience() {
+        List<Customer> tempList = new ArrayList<>();
+
+        // Iterate through each customer in the queue to decrement patience
+        while (!customerQueue.isEmpty()) {
+            Customer customer = customerQueue.poll();
+            customer.patience--;
+
+            // Only re-add customers who still have patience left
+            if (customer.patience > 0) {
+                tempList.add(customer);
+            }
+        }
+
+        // Re-add remaining customers back to the queue
+        customerQueue.addAll(tempList);
+    }
+
+    // Implements finding the closest fish price using binary search.
     private static void findClosestFishPrice(Long price) {
         if (fishPrices.isEmpty()) {
             System.out.println("No fish prices available");
@@ -149,7 +163,6 @@ public class TP1 {
         out.println(Math.abs(closestPrice - price));
     }
 
-    // TODO: Implement removing a customer from the queue by ID.
     // Implements removing a customer from the queue by ID.
     private static void removeCustomer(int customerId) {
         boolean found = false;
@@ -183,14 +196,13 @@ public class TP1 {
     }
 
     // Adds a discount to the discount stack
-    private static void addDiscount(int discount) {
+    private static void addDiscount(Long discount, boolean printSize) {
         discountCoupons.push(discount);
-        out.println(discountCoupons.size()); // Output the size of the discount stack
+        if (printSize) {
+            out.println(discountCoupons.size()); // Only print the size when printSize is true
+        }
     }
 
-    // TODO: Implement serving the next customer in the queue.
-    // Implements serving the next customer in the queue.
-    // Implements serving the next customer in the queue.
     // Implements serving the next customer in the queue.
     private static void serveNextCustomer() {
         // Check if there are no customers to serve
@@ -198,23 +210,23 @@ public class TP1 {
             out.println(-1);
             return;
         }
-
+    
         // Poll the next customer in line (highest priority based on the comparator)
         Customer customer = customerQueue.poll();
-
+    
         // Retrieve the original patience value from the map to reset it correctly
-        long originalPatience = originalPatienceMap.get(customer.id);
+        long originalPatience = originalCustomerMap.get(customer.id).patience;
         long remainingBudget = customer.budget;
-
+    
         // Find the most expensive fish the customer can afford using binary search
         int left = 0;
         int right = fishPrices.size() - 1;
         int bestFishIndex = -1;
-
+    
         // Binary search to find the most expensive fish within the customer's budget
         while (left <= right) {
             int mid = left + (right - left) / 2;
-
+    
             // Check if the current mid fish price is affordable
             if (fishPrices.get(mid) <= remainingBudget) {
                 bestFishIndex = mid; // Update the best affordable fish
@@ -223,47 +235,43 @@ public class TP1 {
                 right = mid - 1; // Search in the left half if the fish is too expensive
             }
         }
-
-        // If no fish can be bought within the budget
+    
+        // If no fish can be bought within the budget, the customer leaves the queue
         if (bestFishIndex == -1) {
             out.println(customer.id); // Output the customer's ID as they leave the queue
-            printCustomerQueue(); // Debug: Print the customer queue state
             return;
         }
-
+    
         // Get the price of the fish the customer can buy
         long fishPrice = fishPrices.get(bestFishIndex);
-        System.out.println("Best fish price = " + fishPrice);
-
-        // Apply discount if available and if it helps to afford a fish or reduces the price to 1
-        if (!discountCoupons.isEmpty()) {
-            int discount = discountCoupons.peek();
-            if (fishPrice - discount <= remainingBudget) {
-                // Apply the discount only if it helps the customer buy the fish affordably
-                fishPrice = Math.max(1, fishPrice - discount); // Discount applied cannot reduce below 1
-                discountCoupons.pop(); // Use the discount coupon
+    
+        // Apply discount only if the fish price matches the customer's budget exactly
+        if (remainingBudget == fishPrice) {
+            if (!discountCoupons.isEmpty()) {
+                long discount = discountCoupons.peek();
+                if (fishPrice - discount <= remainingBudget) {
+                    // Apply the discount only if it helps the customer buy the fish affordably
+                    fishPrice = Math.max(1, fishPrice - discount); // Discount applied cannot reduce below 1
+                    discountCoupons.pop(); // Use the discount coupon
+                }
             }
-        }
 
-        // Calculate the remaining budget after purchase
-        remainingBudget -= fishPrice;
-
-        // Output the remaining budget after purchase
-        System.out.println("Remaining budget for customer ID " + customer.id + " = " + remainingBudget);
-        out.println(remainingBudget);
-
-        // Reset patience to the original value and re-add the customer if they still have money left
-        if (remainingBudget > 0) {
-            customer.budget = remainingBudget;
-            customer.patience = originalPatience; // Reset to original patience value
-            customerQueue.add(customer);
         } else {
-            // If the customer has no budget left, output that they have finished
-            System.out.println("Customer ID " + customer.id + " has no budget left and leaves.");
+            // Calculate the remaining budget after purchase
+            addDiscount(remainingBudget-fishPrice, false);
         }
-
-        printCustomerQueue(); // Debug: Print the customer queue state after serving
+        remainingBudget -= fishPrice;
+    
+        // Output the remaining budget after purchase
+        out.println(remainingBudget);
+    
+        // Reset patience to the original value and re-add the customer if they still have money left
+        customer.budget = remainingBudget;
+        customer.patience = originalPatience; // Reset to original patience value
+        customerQueue.add(customer);
+        
     }
+    
 
     // TODO: Implement calculating happiness based on the query type and budget.
     private static void calculateHappiness(int queryType, int x) {
@@ -298,36 +306,6 @@ public class TP1 {
 
             // Compare by lowest ID (ascending order)
             return Integer.compare(c1.id, c2.id);
-        }
-    }
-
-    // Decrements patience of all customers by 1 and removes those with patience 0
-    private static void decrementPatience() {
-        List<Customer> tempList = new ArrayList<>();
-
-        // Iterate through each customer in the queue to decrement patience
-        while (!customerQueue.isEmpty()) {
-            Customer customer = customerQueue.poll();
-            customer.patience--;
-
-            // Only re-add customers who still have patience left
-            if (customer.patience > 0) {
-                tempList.add(customer);
-            } else {
-                // Customer loses patience and leaves the queue, no re-addition
-                System.out.println("Customer ID " + customer.id + " has lost patience and leaves.");
-            }
-        }
-
-        // Re-add remaining customers back to the queue
-        customerQueue.addAll(tempList);
-    }
-
-    // Debug function to print the current state of the customer queue
-    private static void printCustomerQueue() {
-        System.out.println("Current customer queue state:");
-        for (Customer customer : customerQueue) {
-            System.out.println("ID: " + customer.id + ", Budget: " + customer.budget + ", Patience: " + customer.patience);
         }
     }
 
