@@ -21,7 +21,7 @@ Toko (Warung Ikan Magetan)
 Note: Toko membuat aturan pelanggan tidak boleh membeli tiga souvenir berturut-turut. (tidak dapat membeli souvenir ke-x, x+1, x+2 dalam satu kali pembelian)
 
 Toko (Warung Ikan Magetan)
-Toko memiliki siste diskon. Toko memiliki "tumpukan" (stack) diskon dengan aturan berikut:
+Toko memiliki sistem diskon. Toko memiliki "tumpukan" (stack) diskon dengan aturan berikut:
 - Jika ada pelanggan membeli ikan dan budgetnya tidak pas, maka toko akan menambah kupon diskon senilai kembalian pembelian dan kupon tersebut ditaruh di atas tumpukan kupon diskon.
 - jika ada pelanggan yang membeli ikan dengan uang pas, maka toko akan menerapkan potongan harga dari kupon diskon yang ada di paling atas tumpukan untuk pembelian dengan uang pas tersebut. Perhatikan bahwa pelanggan memilih ikan terlebih dahulu, kemudian diskon baru akan diterapkan pada pembelian dengan 
 ikan yang dipilih tersebut. harga setelah potongan diskon hanya bisa mengubah harga menjadi paling sedikit 1. Contoh: apabila pelanggan membeli ikan seharga x dan mendapat diskon seharga y, maka pelanggan tersebut hanya perlu membayar sebesar max(1,x — y). Apabila tidak ada satupun kupon diskon yang tersedia, maka pelanggan tidak mendapatkan diskon apapun.
@@ -31,7 +31,7 @@ Pada setiap menitnya, tepat satu dari aktivitas berikut akan terjadi.
 Pelanggan baru dengan ID <JUMLAH_PENGUNJUNG_YANG_TELAH_DATANG>(dengan kata lain, ID pengunjung bersifat auto-increment, dimulai dari 0) masuk ke toko dengan budget sebesar BUDGET_PELANGGAN dan tingkat kesabaran sebesar <TINGKAT_KESABARAN_PELANGGAN> menit. Keluarkan ID dari pelanggan tersebut.
 
 2. S[HARGA_DICARI] 
-Pelanggan ingin sekadar melihat-lihat mana ikan yang harganya paling dekat dengan <HARGA_DICARI>. Keluarkan sebuah bilangan bulat yang menyatakan selisih minimum antara <HARGA_DICARI> dengan semua harga ikan yang ada di toko. 
+Mengeluarkan mana ikan yang harganya paling dekat dengan <HARGA_DICARI>. Keluarkan sebuah bilangan bulat yang menyatakan selisih minimum antara <HARGA_DICARI> dengan semua harga ikan yang ada di toko. 
 
 3. L[ID_PELANGGAN] 
 Pelanggan dengan ID <ID_PELANGGAN> keluar dari antrian. Keluarkan uang dari pelanggan tersebut. Jika tidak ada pelanggan dengan ID <ID_PELANGGAN> pada antrian (baik itu tidak pernah mengantri ataupun sudah keluar dari antrian), keluarkan -1.
@@ -122,3 +122,235 @@ TIPE_QUERY = 1 atau TIPE_QUERY = 2
 1 =< X =< 10^5
 1 =< M*X =< 10^5 
 Kemunculan kueri O 2 tidak lebih dari 50 kali.
+
+# Contoh Masukan 1
+```
+10 3 20
+3 4 6 11 13 20 21 23 43 47
+1 2 3
+4 5 6
+A 20 4
+A 10 20
+A 25 10
+B
+B
+L 0
+L 3
+L 2
+A 4 6
+B
+B
+B
+S 13
+S 42
+S 7
+S 60
+S 15
+S 1
+D 8
+B
+```
+
+# Contoh Keluaran 1
+```
+0
+1
+2
+2
+4
+-1
+-1
+2
+3
+3
+2
+0
+0
+1
+1
+13
+2
+2
+1
+1
+```
+
+Penjelasan Masukkan
+1. A204 
+Pelanggan dengan budget 20 dan tingkat kesabaran 4 memasuki toko. Pelanggan 
+ini adalah pelanggan pertama yang masuk ke toko, sehingga pelanggan ini memiliki 
+ID O
+
+2. A1020 
+Pelanggan dengan budget 10 dan tingkat kesabaran 20 memasuki toko. Pelanggan 
+ini adalah pelanggan kedua yang masuk ke toko, sehingga pelanggan ini memiliki ID 1.
+
+3. A2510 
+Pelanggan dengan budget 25 dan tingkat kesabaran 10 memasuki toko. Pelanggan 
+ini adalah pelanggan ketiga yang masuk ke toko, sehingga pelanggan ini memiliki ID 
+2. Karena pelanggan ini memiliki budget lebih tinggi dibanding dua pelanggan 
+sebelumnya, maka pelanggan ini akan berada di paling depan.
+
+4. B 
+Pelanggan yang ada di paling depan yaitu ID 2 dilayani dengan pembelian ikan 
+seharga 23. Uang dari pelanggan tersebut berkurang menjadi 2 dan tingkat 
+kesabaran kembali seperti semula menjadi 10. Karena pelanggan tersebut 
+membeli dengan uang tidak pas, maka masukkan kupon bernilai 25-23=2 ke atas 
+tumpukan kupon. 
+
+5. B 
+Pelanggan dengan ID 0 keluar dari toko karena habis kesabaran. Sehingga 
+pelanggan yang ada di paling depan adalah ID 1. Pelanggan terdepan dilayani 
+dengan pembelian ikan seharga 6. Uang dari pelanggan tersebut berkurang 
+menjadi 4 dan tingkat kesabaran kembali seperti semula menjadi 20. Karena 
+pelanggan tersebut membeli dengan uang tidak pas, maka masukkan kupon 
+bernilai 10-6=4 ke atas tumpukan kupon.
+
+6. LO 
+Keluarkan -1 karena pelanggan dengan ID 0 sudah memang sudah keluar. 
+
+7. L3 
+Keluarkan -1 karena pelanggan dengan ID 3 memang tidak ada di toko. 
+
+8. L2 
+Pelanggan dengan ID 2 keluar dari toko. Keluarkan sisa uang yang ia miliki, yaitu 2.
+
+9. A46 
+Pelanggan dengan budget 4 dan tingkat kesabaran 6 memasuki toko. Pelanggan ini 
+adalah pelanggan keempat yang masuk ke toko, sehingga pelanggan ini memiliki ID 3. Karena pelanggan ini memiliki tingkat kesabaran yang lebih rendah dibanding 
+pelanggan dengan ID 1, maka pelanggan ini akan berada di paling depan 
+
+10. B 
+Pelanggan yang ada di paling depan yaitu ID 3 dilayani dengan pembelian ikan 
+seharga 4. Karena pelanggan ini membeli dengan uang pas, maka harga ikan 
+dipotong sesuai dengan kupon teratas yaitu 4. Harga ikan menjadi max(1, 4-4)=1. 
+Uang dari pelanggan tersebut berkurang menjadi 3 dan tingkat kesabaran kembali 
+seperti semula menjadi 6 
+
+11. B
+Pelanggan yang ada di paling depan yaitu ID 1 dilayani dengan pembelian ikan 
+seharga 4. Karena pelanggan ini membeli dengan uang pas, maka harga ikan 
+dipotong sesuai dengan kupon teratas yaitu 2. Harga ikan menjadi max(1, 4-2)=2. 
+Uang dari pelanggan tersebut berkurang menjadi 2 dan tingkat kesabaran kembali 
+seperti semula menjadi 20. 
+
+12. B 
+Pelanggan yang ada di paling depan yaitu ID 3 dilayani dengan pembelian ikan 
+seharga 3. Karena pelanggan ini membeli dengan uang pas, maka harga ikan 
+dipotong sesuai dengan kupon teratas. Namun karena sedang tidak ada kupon, 
+maka tidak ada potongan harga yang terjadi. Harga ikan tetap menjadi 3. Uang dari 
+pelanggan tersebut berkurang menjadi 0 dan tingkat kesabaran kembali seperti 
+semula menjadi 6.
+
+13. S 13 
+Harga ikan yang terdekat dengan 13 adalah 13. Maka keluarkan selisih mereka 
+yaitu 0.
+
+14. S 42 
+Harga ikan yang terdekat dengan 42 adalah 43. Maka keluarkan 1.
+
+15. S 7 
+Harga ikan yang terdekat dengan 7 adalah 6. Maka keluarkan 1
+
+16. S 60 
+Harga ikan yang terdekat dengan 60 adalah 47. Maka keluarkan 13.
+
+17. S 15 
+Harga ikan yang terdekat dengan 15 adalah 13. Maka keluarkan 2.
+
+18. S 1 
+Harga ikan yang terdekat dengan 1 adalah 3. Maka keluarkan 2. Perhatikan bahwa 
+setelah 6 menit, pelanggan dengan ID 3 habis kesabaran dan keluar dari toko. 
+
+19. D 8 
+Tambahkan kupon bernilai 8 ke atas tumpukan kupon. Keluarkan banyaknya kupon 
+di tumpukan, yaitu 1. 
+
+20. B 
+Pelanggan yang ada di paling depan yaitu ID 1 tidak bisa membeli ikan apapun 
+sehingga kupon juga tidak akan diterapkan pada kasus ini. Pelanggan keluar dari toko
+
+# Contoh Masukan 2
+```
+1 7 8
+1
+100 5 5 6 7 8 9
+1000 20 20 90 90 90 21
+O 2 5
+O 1 11
+O 1 12
+O 2 13
+O 2 18
+O 2 25
+O 2 27
+O 2 109
+```
+
+# Contoh Keluaran 2
+```
+20 2
+110
+110
+180 4 5
+200 2 4 5
+220 2 3 5 6
+221 2 4 5 7
+1090 1 4
+```
+
+Penjelasan Contoh 2 
+Terdapat 7 suvenir: 
+a. Suvenir 1, dengan harga 100 dan nilai 1000 
+b. Suvenir 2, dengan harga 5 dan nilai 20 
+c. Suvenir 3, dengan harga 5 dan nilai 20 
+d. Suvenir 4, dengan harga 6 dan nilai 90 
+e. Suvenir 5, dengan harga 7 dan nilai 90 
+f. Suvenir 6, dengan harga 8 dan nilai 90 
+g. Suvenir 7, dengan harga 9 dan nilai 21 
+
+Pada masing masing query: 
+1. O 2 5 
+Sofita memiliki uang sebanyak 5, dan nilai maksimum yang dapat sofita dapatkan 
+adalah 20, yaitu dengan mengambil Suvenir ke 2 (total harga 5). Perlu diperhatikan 
+bahwa sebenarnya, Sofita juga bisa mencapai nilai 20 dengan mengambil Suvenir ke 
+3, namun [2] lebih kecil secara leksikografis dibandingkan [3], maka kita print 2 
+sebagai indeks yang diambil. 
+
+2. O 1 11 
+Sofita memiliki uang sebanyak 11, dan nilai maksimum yang dapat sofita dapatkan 
+adalah 20+90=110, yaitu dengan mengambil Suvenir ke 2 dan Suvenir ke 4 (total 
+harga 5+6=11). 
+
+3. O 1 12 
+Sofita memiliki uang sebanyak 12, dan nilai maksimum yang dapat sofita dapatkan 
+adalah 20+90=110, yaitu dengan mengambil Suvenir ke 2 dan Suvenir ke 4 (total 
+harga 5+6=11). 
+
+4. O 2 13 
+Sofita memiliki uang sebanyak 13, dan nilai maksimum yang dapat sofita dapatkan 
+adalah 90+90=180, yaitu dengan mengambil Suvenir ke 3 dan Suvenir ke 4 (total 
+harga 6+7=13). Sehingga kita akan memilih index 3 dan 4.
+
+5. O 2 18 
+Sofita memiliki uang sebanyak 18, dan nilai maksimum yang dapat sofita dapatkan 
+adalah 20+90+90=200, yaitu dengan mengambil Suvenir ke 2, 4 dan 5 (total harga 
+5+6+7=18). Perlu diperhatikan juga bahwa kita bisa mencapai nilai 200 dengan 
+mengambil suvenir ke 3, 4, dan 5. Namun, hal ini melanggar constraint dimana tidak 
+boleh ada 3 suvenir berurutan yang diambil. Dan juga [2, 4, 5] lebih kecil secara 
+leksikografis dibanding [3, 4, 5] 
+
+6. O 2 25 
+Sofita memiliki uang sebanyak 25, dan nilai maksimum yang dapat sofita dapatkan 
+adalah 20+20+90+90=220, yaitu dengan mengambil Suvenir ke 2, 3, 5, dan 6 (total 
+harga 5+5+7+8=25). Perlu diperhatikan juga bahwa sebenarnya, kita bisa mencapai 
+nilai 90+90+90=270 yang lebih besar dengan mengambil suvenir ke 4, 5 dan 6, 
+dimana total harganya masih kurang dari uang sofita (6+7+8=21). Namun, hal ini 
+melanggar constraint dimana tidak boleh ada 3 suvenir berurutan yang diambil. 
+
+7. O 2 27 
+Sofita memiliki uang sebanyak 27, dan nilai maksimum yang dapat sofita dapatkan 
+adalah 20+90+90+21=221, yaitu dengan mengambil Suvenir ke 2, 4, 5, dan 7 (total 
+harga 5+6+7+9=27). Perlu diperhatikan juga bahwa sebenarnya, kita bisa mencapai 
+nilai 20+90+90+90=290 dengan mengambil suvenir ke 2, 4, 5, dan 6, dimana total 
+harganya masih kurang dari uang sofita (5+6+7+8=26). Namun, hal ini melanggar 
+constraint dimana tidak boleh ada 3 suvenir berurutan yang diambil. 
