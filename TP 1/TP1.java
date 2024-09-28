@@ -18,6 +18,7 @@ public class TP1 {
     private static Queue<Customer> customerQueue = new PriorityQueue<>(new CustomerComparator());
     private static Stack<Long> discountCoupons = new Stack<>();
     private static int customerIdCounter = 0;
+    private static int timeGlobal = 0;
 
     public static void main(String[] args) {
         InputStream inputStream = System.in;
@@ -57,12 +58,12 @@ public class TP1 {
     // Processes each operation based on the input
     private static void processOperation(String operation) {
         // Decrement patience at the end of each process operation
-        decrementPatience();
+        timeGlobal++;
         switch (operation.charAt(0)) {
             case 'A': // Add a new customer
                 long budget = in.nextLong();
                 int patience = in.nextInteger();
-                addCustomer(budget, patience, true);
+                addCustomer(budget, patience, true, timeGlobal);
                 break;
 
             case 'S': // Find the closest fish price
@@ -71,6 +72,7 @@ public class TP1 {
                 break;
 
             case 'L': // Remove a customer by ID
+                decrementPatience();
                 long customerId = in.nextLong();
                 removeCustomer(customerId);
                 break;
@@ -81,6 +83,7 @@ public class TP1 {
                 break;
 
             case 'B': // Serve the next customer
+                decrementPatience();
                 serveNextCustomer();
                 break;
 
@@ -96,8 +99,8 @@ public class TP1 {
     }
 
     // Method A = Adds a new customer with the given budget and patience
-    private static void addCustomer(long budget, long patience, boolean inQueue) {
-        Customer newCustomer = new Customer(customerIdCounter++, budget, patience, patience, inQueue);
+    private static void addCustomer(long budget, long patience, boolean inQueue, int entranceTime) {
+        Customer newCustomer = new Customer(customerIdCounter++, budget, patience, patience, inQueue, timeGlobal); // timeGlobal keeps the time of when the customer enters
         customerData.add(newCustomer);
         customerQueue.add(newCustomer);
         out.println(newCustomer.id); // Output the ID of the new customer
@@ -109,7 +112,8 @@ public class TP1 {
 
         // Iterate through each customer in the queue to decrement patience
         for (Customer customer : customerQueue) {
-            customer.patience--;
+            customer.patience -= (timeGlobal - customer.entranceTime);
+            customer.entranceTime = timeGlobal;
 
             // Remove customers whose patience has run out
             if (customer.patience <= 0) {
@@ -229,7 +233,7 @@ public class TP1 {
                 fishPrice = Math.max(1, fishPrice - discount); // Discount applied cannot reduce below 1
             }
         } else {
-            // Calculate the remaining budget after purchase
+            // Calculate the remaining budget after purchase add to discount stack
             addDiscount(remainingBudget-fishPrice, false);
         }
 
@@ -238,115 +242,102 @@ public class TP1 {
         // Output the remaining budget after purchase
         out.println(remainingBudget);
     
-        // Reset patience to the original value and re-add the customer if they still have money left
+        // Readd customer regardless of remaining budget
         customer.budget = remainingBudget;
         customer.patience = originalPatience; // Reset to original patience value
         customerQueue.add(customer);
         customer.inQueue = true;
     }
-    
+
     // TODO: Implement calculating happiness based on the query type and budget.
     private static void calculateHappiness(int queryType, int x) {
         int M = souvenirPrices.size();
-        int[][][] dp = new int[M + 1][x + 1][3]; // 3D DP array
-    
-        // Initialize the DP array with zeros
+        
+        // DP arrays for three states
+        int[][] dp0 = new int[M + 1][x + 1]; // State 0: no consecutive items
+        int[][] dp1 = new int[M + 1][x + 1]; // State 1: one consecutive item
+        int[][] dp2 = new int[M + 1][x + 1]; // State 2: two consecutive items
+        
+        // Path arrays to track indices
+        List<Integer>[][] path0 = new ArrayList[M + 1][x + 1];
+        List<Integer>[][] path1 = new ArrayList[M + 1][x + 1];
+        List<Integer>[][] path2 = new ArrayList[M + 1][x + 1];
+        
+        // Initialize DP and path arrays
         for (int i = 0; i <= M; i++) {
             for (int j = 0; j <= x; j++) {
-                Arrays.fill(dp[i][j], 0);
+                dp0[i][j] = 0;
+                dp1[i][j] = 0;
+                dp2[i][j] = 0;
+                path0[i][j] = new ArrayList<>();
+                path1[i][j] = new ArrayList<>();
+                path2[i][j] = new ArrayList<>();
             }
         }
-    
-        // DP processing
+        
+        // DP processing with constraints
         for (int i = 1; i <= M; i++) {
             int price = souvenirPrices.get(i - 1);
             int value = souvenirValues.get(i - 1);
-    
+            
             for (int j = 0; j <= x; j++) {
-                // Not taking the i-th souvenir
-                dp[i][j][0] = Math.max(dp[i - 1][j][0], Math.max(dp[i - 1][j][1], dp[i - 1][j][2])); // No consecutive
-    
-                // Taking the i-th souvenir
-                if (j >= price) {
-                    // Take as the first in a new sequence
-                    dp[i][j][1] = dp[i - 1][j - price][0] + value;
-    
-                    // Take as the second consecutive
-                    dp[i][j][2] = dp[i - 1][j - price][1] + value;
-                }
-            }
-        }
-    
-        // Calculate the maximum happiness based on the query type
-        int maxHappiness = Math.max(dp[M][x][0], Math.max(dp[M][x][1], dp[M][x][2]));
-    
-        if (queryType == 1) {
-            // Output the maximum happiness for query type 1
-            out.println(maxHappiness);
-            return;
-        }
-    
-        // Tracking paths for query type 2 using similar logic as before
-        List<Integer>[][][] path = new ArrayList[M + 1][x + 1][3]; // Track paths
-    
-        // Initialize paths
-        for (int i = 0; i <= M; i++) {
-            for (int j = 0; j <= x; j++) {
-                for (int k = 0; k < 3; k++) {
-                    path[i][j][k] = new ArrayList<>();
-                }
-            }
-        }
-    
-        // Recompute paths with correct sequences
-        for (int i = 1; i <= M; i++) {
-            int price = souvenirPrices.get(i - 1);
-            int value = souvenirValues.get(i - 1);
-    
-            for (int j = 0; j <= x; j++) {
-                // Not taking the i-th souvenir
-                if (dp[i][j][0] == dp[i - 1][j][0]) {
-                    path[i][j][0] = new ArrayList<>(path[i - 1][j][0]);
-                } else if (dp[i][j][0] == dp[i - 1][j][1]) {
-                    path[i][j][0] = new ArrayList<>(path[i - 1][j][1]);
+                // Update state 0 (not taking the current item)
+                dp0[i][j] = Math.max(dp0[i - 1][j], Math.max(dp1[i - 1][j], dp2[i - 1][j]));
+                if (dp0[i][j] == dp0[i - 1][j]) {
+                    path0[i][j] = new ArrayList<>(path0[i - 1][j]);
+                } else if (dp0[i][j] == dp1[i - 1][j]) {
+                    path0[i][j] = new ArrayList<>(path1[i - 1][j]);
                 } else {
-                    path[i][j][0] = new ArrayList<>(path[i - 1][j][2]);
+                    path0[i][j] = new ArrayList<>(path2[i - 1][j]);
                 }
-    
-                // Taking the i-th souvenir
+                
+                // Update state 1 (taking the current item as the first in a sequence)
                 if (j >= price) {
-                    // Take as the first in a new sequence
-                    if (dp[i][j][1] == dp[i - 1][j - price][0] + value) {
-                        path[i][j][1] = new ArrayList<>(path[i - 1][j - price][0]);
-                        path[i][j][1].add(i);
+                    int newValue = dp0[i - 1][j - price] + value;
+                    if (newValue > dp1[i][j]) {
+                        dp1[i][j] = newValue;
+                        path1[i][j] = new ArrayList<>(path0[i - 1][j - price]);
+                        path1[i][j].add(i);
                     }
-    
-                    // Take as the second consecutive
-                    if (dp[i][j][2] == dp[i - 1][j - price][1] + value) {
-                        path[i][j][2] = new ArrayList<>(path[i - 1][j - price][1]);
-                        path[i][j][2].add(i);
+                }
+                
+                // Update state 2 (taking the current item as the second in a sequence)
+                if (j >= price) {
+                    int newValue = dp1[i - 1][j - price] + value;
+                    if (newValue > dp2[i][j]) {
+                        dp2[i][j] = newValue;
+                        path2[i][j] = new ArrayList<>(path1[i - 1][j - price]);
+                        path2[i][j].add(i);
                     }
                 }
             }
         }
-    
-        // Find the best path
-        List<Integer> resultPath = path[M][x][0];
-        if (dp[M][x][1] > dp[M][x][0]) {
-            resultPath = path[M][x][1];
+        
+        // Find the maximum happiness for the given budget
+        int maxHappiness = Math.max(dp0[M][x], Math.max(dp1[M][x], dp2[M][x]));
+        List<Integer> resultPath = new ArrayList<>();
+        
+        // Determine which path corresponds to the max happiness
+        if (maxHappiness == dp0[M][x]) {
+            resultPath = path0[M][x];
+        } else if (maxHappiness == dp1[M][x]) {
+            resultPath = path1[M][x];
+        } else {
+            resultPath = path2[M][x];
         }
-        if (dp[M][x][2] > Math.max(dp[M][x][0], dp[M][x][1])) {
-            resultPath = path[M][x][2];
+        
+        // Output the result based on the query type
+        if (queryType == 1) {
+            out.println(maxHappiness); // For query type 1, only output the maximum happiness
+        } else if (queryType == 2) {
+            out.print(maxHappiness); // Output the maximum happiness and the path taken
+            for (int index : resultPath) {
+                out.print(" " + index);
+            }
+            out.println();
         }
-    
-        // Output the result for query type 2
-        out.print(maxHappiness);
-        for (int index : resultPath) {
-            out.print(" " + index);
-        }
-        out.println();
-    }    
-    
+    }
+
     // Customer class to hold customer data
     static class Customer {
         int id;
@@ -354,13 +345,15 @@ public class TP1 {
         long patience;
         long originalPatience;
         boolean inQueue;
+        int entranceTime;
 
-        public Customer(int id, long budget, long patience, long originalPatience, boolean inQueue) {
+        public Customer(int id, long budget, long patience, long originalPatience, boolean inQueue, int entranceTime) {
             this.id = id;
             this.budget = budget;
             this.patience = patience;
             this.originalPatience = originalPatience;
             this.inQueue = inQueue;
+            this.entranceTime = entranceTime;
         }
     }
 
