@@ -112,7 +112,7 @@ public class TP1 {
             customer.patience--;
 
             // Remove customers whose patience has run out
-            if (customer.patience == 0) {
+            if (customer.patience <= 0) {
                 tempList.add(customer);
                 customer.inQueue = false; // Not in queue anymore
             }
@@ -245,13 +245,108 @@ public class TP1 {
         customer.inQueue = true;
     }
     
-
     // TODO: Implement calculating happiness based on the query type and budget.
     private static void calculateHappiness(int queryType, int x) {
-        // Implement logic to calculate the maximum happiness with constraints
-        // Use dynamic programming if necessary, depending on queryType 1 or 2
-    }
-
+        int M = souvenirPrices.size();
+        int[][][] dp = new int[M + 1][x + 1][3]; // 3D DP array
+    
+        // Initialize the DP array with zeros
+        for (int i = 0; i <= M; i++) {
+            for (int j = 0; j <= x; j++) {
+                Arrays.fill(dp[i][j], 0);
+            }
+        }
+    
+        // DP processing
+        for (int i = 1; i <= M; i++) {
+            int price = souvenirPrices.get(i - 1);
+            int value = souvenirValues.get(i - 1);
+    
+            for (int j = 0; j <= x; j++) {
+                // Not taking the i-th souvenir
+                dp[i][j][0] = Math.max(dp[i - 1][j][0], Math.max(dp[i - 1][j][1], dp[i - 1][j][2])); // No consecutive
+    
+                // Taking the i-th souvenir
+                if (j >= price) {
+                    // Take as the first in a new sequence
+                    dp[i][j][1] = dp[i - 1][j - price][0] + value;
+    
+                    // Take as the second consecutive
+                    dp[i][j][2] = dp[i - 1][j - price][1] + value;
+                }
+            }
+        }
+    
+        // Calculate the maximum happiness based on the query type
+        int maxHappiness = Math.max(dp[M][x][0], Math.max(dp[M][x][1], dp[M][x][2]));
+    
+        if (queryType == 1) {
+            // Output the maximum happiness for query type 1
+            out.println(maxHappiness);
+            return;
+        }
+    
+        // Tracking paths for query type 2 using similar logic as before
+        List<Integer>[][][] path = new ArrayList[M + 1][x + 1][3]; // Track paths
+    
+        // Initialize paths
+        for (int i = 0; i <= M; i++) {
+            for (int j = 0; j <= x; j++) {
+                for (int k = 0; k < 3; k++) {
+                    path[i][j][k] = new ArrayList<>();
+                }
+            }
+        }
+    
+        // Recompute paths with correct sequences
+        for (int i = 1; i <= M; i++) {
+            int price = souvenirPrices.get(i - 1);
+            int value = souvenirValues.get(i - 1);
+    
+            for (int j = 0; j <= x; j++) {
+                // Not taking the i-th souvenir
+                if (dp[i][j][0] == dp[i - 1][j][0]) {
+                    path[i][j][0] = new ArrayList<>(path[i - 1][j][0]);
+                } else if (dp[i][j][0] == dp[i - 1][j][1]) {
+                    path[i][j][0] = new ArrayList<>(path[i - 1][j][1]);
+                } else {
+                    path[i][j][0] = new ArrayList<>(path[i - 1][j][2]);
+                }
+    
+                // Taking the i-th souvenir
+                if (j >= price) {
+                    // Take as the first in a new sequence
+                    if (dp[i][j][1] == dp[i - 1][j - price][0] + value) {
+                        path[i][j][1] = new ArrayList<>(path[i - 1][j - price][0]);
+                        path[i][j][1].add(i);
+                    }
+    
+                    // Take as the second consecutive
+                    if (dp[i][j][2] == dp[i - 1][j - price][1] + value) {
+                        path[i][j][2] = new ArrayList<>(path[i - 1][j - price][1]);
+                        path[i][j][2].add(i);
+                    }
+                }
+            }
+        }
+    
+        // Find the best path
+        List<Integer> resultPath = path[M][x][0];
+        if (dp[M][x][1] > dp[M][x][0]) {
+            resultPath = path[M][x][1];
+        }
+        if (dp[M][x][2] > Math.max(dp[M][x][0], dp[M][x][1])) {
+            resultPath = path[M][x][2];
+        }
+    
+        // Output the result for query type 2
+        out.print(maxHappiness);
+        for (int index : resultPath) {
+            out.print(" " + index);
+        }
+        out.println();
+    }    
+    
     // Customer class to hold customer data
     static class Customer {
         int id;
