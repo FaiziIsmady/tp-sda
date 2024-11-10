@@ -1,0 +1,11 @@
+# Ignore all .class files
+*.class
+
+# Ignore all .txt files
+*.txt
+
+# Ignore .cph directory
+TP 1/.cph/
+
+# Ignore specific Java file
+TP 1/TP111.java
