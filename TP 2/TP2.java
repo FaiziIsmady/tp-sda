@@ -203,27 +203,33 @@ class CircularLinkedList {
             return;
         }
     
+        boolean validDirection = true;
         if (direction.equals("L")) {
             sofitaTeam = sofitaTeam.prev;
         } else if (direction.equals("R")) {
             sofitaTeam = sofitaTeam.next;
-        }
-    
-        // Check for Penjoki in the same team
-        if (sofitaTeam == penjokiTeam) {
-            sofitaTeam.cheaterCaughtCount++;
-            applyPenjokiConsequences(sofitaTeam);
-            movePenjokiAfterCaught();
-            // Do not return here; we need to print the team ID after consequences are applied
-        }
-    
-        // Now, print the team ID that Sofita ends up supervising
-        if (sofitaTeam != null) {
-            TP2.out.println(sofitaTeam.teamId);
         } else {
+            // Handle invalid direction input
             TP2.out.println(-1);
+            validDirection = false;
         }
-    }           
+    
+        if (validDirection) {
+            // Check for Penjoki in the same team
+            if (sofitaTeam == penjokiTeam) {
+                sofitaTeam.cheaterCaughtCount++;
+                applyPenjokiConsequences(sofitaTeam);
+                movePenjokiAfterCaught();
+            }
+    
+            // Now, print the team ID that Sofita ends up supervising
+            if (sofitaTeam != null) {
+                TP2.out.println(sofitaTeam.teamId);
+            } else {
+                TP2.out.println(-1);
+            }
+        }
+    }               
 
     public void applyPenjokiConsequences(Team team) {
         int count = team.cheaterCaughtCount;
@@ -244,11 +250,13 @@ class CircularLinkedList {
                     }
                     // No output if Sofita supervises a new team
                 }
+
             } else {
                 // Reorder teams since totalPoints and participantCounts have changed
                 reorderTeamsAfterConsequences();
                 // Do not output the team ID here
             }
+
         } else if (count == 2) {
             // Set all participants' points to 1
             team.setAllParticipantsPoints(1);
@@ -274,10 +282,8 @@ class CircularLinkedList {
                 // Do not output the team ID here
             }
         }
-
         // Do not output the team ID here unless the team was eliminated and Sofita has no team left
     }
- 
 
     // Move Penjoki after being caught
     public void movePenjokiAfterCaught() {
@@ -297,7 +303,7 @@ class CircularLinkedList {
         penjokiTeam = minTeam;
     }
 
-    private void eliminateTeam(Team team) {
+    public void eliminateTeam(Team team) {
         // Remove the team from the linked list
         if (team == head && team == tail) {
             // Only one team left
@@ -380,6 +386,13 @@ class CircularLinkedList {
 
     // Membuat tim baru
     public void createNewTeam(String position) {
+        // Validate position input
+        if (!position.equals("L") && !position.equals("R")) {
+            TP2.out.println(-1);
+            return;
+        }
+
+        // Create a new team with seven participants, each with 1 point
         Team newTeam = new Team(TP2.teamIdCounter++);
         for (int i = 0; i < 7; i++) { // Tim terinisialisasi berisi 7 orang
             Participant participant = new Participant(TP2.participantIdCounter++, 1);
@@ -390,6 +403,8 @@ class CircularLinkedList {
             // Insert to the left of Sofita's team
             if (sofitaTeam == null) {
                 addTeam(newTeam);
+                // After adding, set Sofita to supervise the team with highest points
+                sofitaTeam = findTeamWithHighestPoints();
             } else {
                 Team leftTeam = sofitaTeam.prev;
 
@@ -402,10 +417,13 @@ class CircularLinkedList {
                     head = newTeam;
                 }
             }
+
         } else if (position.equals("R")) {
             // Insert to the right of Sofita's team
             if (sofitaTeam == null) {
                 addTeam(newTeam);
+                // After adding, set Sofita to supervise the team with highest points
+                sofitaTeam = findTeamWithHighestPoints();
             } else {
                 Team rightTeam = sofitaTeam.next;
 
@@ -420,8 +438,10 @@ class CircularLinkedList {
             }
         }
 
+        // Output the new team's ID
         TP2.out.println(newTeam.teamId);
     }
+
 
     public void simulateMatch(int participant1Id, int participant2Id, int teamId, int result) {
         if (sofitaTeam == null) {
@@ -472,6 +492,9 @@ class CircularLinkedList {
     
             if (participant2.points == 0) {
                 otherTeam.removeParticipant(participant2);
+                if (otherTeam.participantCount < 7) {
+                    eliminateTeam(otherTeam);
+                }
             }
             TP2.out.println(participant1.points);
         } else if (result == -1) {
@@ -488,6 +511,15 @@ class CircularLinkedList {
     
             if (participant1.points == 0) {
                 sofitaTeam.removeParticipant(participant1);
+                // Check if sofitaTeam needs to be eliminated
+                if (sofitaTeam.participantCount < 7) {
+                    eliminateTeam(sofitaTeam);
+                    // Update sofitaTeam reference
+                    sofitaTeam = findTeamWithHighestPoints();
+                    if (sofitaTeam == null) {
+                        TP2.out.println(-1);
+                    }
+                }
             }
             TP2.out.println(participant2.points);
         }
@@ -704,6 +736,8 @@ class Team {
     int participantCount;
     int cheaterCaughtCount;
 
+    Map<Integer, Participant> participantMap;
+
     Team next;
     Team prev;
 
@@ -713,11 +747,13 @@ class Team {
         this.totalPoints = 0;
         this.participantCount = 0;
         this.cheaterCaughtCount = 0;
+        this.participantMap = new HashMap<>();
     }
 
     // Add a participant to the team
     public void addParticipant(Participant participant) {
         participants.insert(participant);
+        participantMap.put(participant.id, participant);
         totalPoints += participant.points;
         participantCount++;
     }
@@ -725,6 +761,7 @@ class Team {
     // Remove a participant from the team
     public void removeParticipant(Participant participant) {
         participants.delete(participant);
+        participantMap.remove(participant.id);
         totalPoints -= participant.points;
         participantCount--;
     }
@@ -738,7 +775,7 @@ class Team {
 
     // Find a participant by ID
     public Participant findParticipant(int participantId) {
-        return participants.find(participantId);
+        return participantMap.get(participantId); // O(1) lookup
     }
 
     // Remove top N participants based on points
@@ -783,7 +820,7 @@ class Team {
         }
 
         // Check if the sender has enough points
-        if (sender.points < pointsToTransfer) {
+        if (pointsToTransfer >= sender.points) {
             return false;
         }
 
@@ -800,8 +837,6 @@ class Team {
 
         return true;
     }
-
-    // Other methods as needed...
 }
 
 class Participant {
@@ -828,14 +863,14 @@ class AVLTree {
         }
     }
 
-    private Node root;
+    public Node root;
 
     // Insert a participant into the AVL tree
     public void insert(Participant participant) {
         root = insertRec(root, participant);
     }
 
-    private Node insertRec(Node node, Participant participant) {
+    public Node insertRec(Node node, Participant participant) {
         if (node == null) {
             return new Node(participant);
         }
@@ -856,7 +891,7 @@ class AVLTree {
         root = deleteRec(root, participant);
     }
 
-    private Node deleteRec(Node node, Participant participant) {
+    public Node deleteRec(Node node, Participant participant) {
         if (node == null) return null;
 
         int cmp = compareParticipants(participant, node.participant);
@@ -894,7 +929,7 @@ class AVLTree {
         return findRec(root, participantId);
     }
 
-    private Participant findRec(Node node, int participantId) {
+    public Participant findRec(Node node, int participantId) {
         if (node == null) return null;
         if (node.participant.id == participantId) return node.participant;
 
@@ -911,7 +946,7 @@ class AVLTree {
         return result;
     }
 
-    private void getTopNRec(Node node, List<Participant> result, int n) {
+    public void getTopNRec(Node node, List<Participant> result, int n) {
         if (node == null || result.size() >= n) return;
         getTopNRec(node.right, result, n);
         if (result.size() < n) {
@@ -927,11 +962,11 @@ class AVLTree {
         return result;
     }
 
-    private void getAllRec(Node node, List<Participant> result) {
+    public void getAllRec(Node node, List<Participant> result) {
         if (node == null) return;
-        getAllRec(node.left, result);
-        result.add(node.participant);
         getAllRec(node.right, result);
+        result.add(node.participant);
+        getAllRec(node.left, result);
     }
 
     // Rebuild the AVL tree from a list of participants
@@ -949,7 +984,7 @@ class AVLTree {
         return uniquePoints;
     }
 
-    private void collectUniquePoints(Node node, Set<Integer> uniquePoints) {
+    public void collectUniquePoints(Node node, Set<Integer> uniquePoints) {
         if (node == null) return;
         collectUniquePoints(node.left, uniquePoints);
         uniquePoints.add(node.participant.points);
@@ -991,7 +1026,7 @@ class AVLTree {
         return count;
     }    
 
-    private void collectPoints(Node node, List<Integer> pointsList) {
+    public void collectPoints(Node node, List<Integer> pointsList) {
         if (node == null) return;
         collectPoints(node.left, pointsList);
         pointsList.add(node.participant.points);
@@ -999,19 +1034,19 @@ class AVLTree {
     }
 
     // AVL Tree utility methods
-    private void updateHeight(Node node) {
+    public void updateHeight(Node node) {
         node.height = 1 + Math.max(getHeight(node.left), getHeight(node.right));
     }
 
-    private int getHeight(Node node) {
+    public int getHeight(Node node) {
         return node == null ? 0 : node.height;
     }
 
-    private int getBalance(Node node) {
+    public int getBalance(Node node) {
         return node == null ? 0 : getHeight(node.left) - getHeight(node.right);
     }
 
-    private Node balance(Node node) {
+    public Node balance(Node node) {
         int balance = getBalance(node);
         if (balance > 1) {
             if (getBalance(node.left) >= 0) {
@@ -1035,7 +1070,7 @@ class AVLTree {
         return node;
     }
 
-    private Node rightRotate(Node y) {
+    public Node rightRotate(Node y) {
         Node x = y.left;
         Node T2 = x.right;
         // Perform rotation
@@ -1048,7 +1083,7 @@ class AVLTree {
         return x;
     }
 
-    private Node leftRotate(Node x) {
+    public Node leftRotate(Node x) {
         Node y = x.right;
         Node T2 = y.left;
         // Perform rotation
@@ -1061,28 +1096,28 @@ class AVLTree {
         return y;
     }
 
-    private int compareParticipants(Participant a, Participant b) {
+    public int compareParticipants(Participant a, Participant b) {
         if (a.points != b.points) {
-            return Integer.compare(b.points, a.points);
+            return Integer.compare(a.points, b.points); // Higher points considered greater
         } else if (a.matches != b.matches) {
-            return Integer.compare(a.matches, b.matches);
+            return Integer.compare(b.matches, a.matches); // Fewer matches considered greater
         } else {
-            return Integer.compare(a.id, b.id);
+            return Integer.compare(b.id, a.id); // Smaller IDs considered greater
         }
-    }
+    }    
 
-    private Node getMinValueNode(Node node) {
+    public Node getMinValueNode(Node node) {
         Node current = node;
         while (current.left != null) current = current.left;
         return current;
     }
 
-    private void sortPointsList(List<Integer> pointsList) {
+    public void sortPointsList(List<Integer> pointsList) {
         if (pointsList.size() <= 1) return;
         mergeSort(pointsList, 0, pointsList.size() - 1);
     }
     
-    private void mergeSort(List<Integer> list, int left, int right) {
+    public void mergeSort(List<Integer> list, int left, int right) {
         if (left < right) {
             int mid = (left + right) / 2;
             mergeSort(list, left, mid);
@@ -1091,7 +1126,7 @@ class AVLTree {
         }
     }
     
-    private void merge(List<Integer> list, int left, int mid, int right) {
+    public void merge(List<Integer> list, int left, int mid, int right) {
         int n1 = mid - left + 1;
         int n2 = right - mid;
     
@@ -1125,5 +1160,4 @@ class AVLTree {
             k++;
         }
     }
-    
 }
