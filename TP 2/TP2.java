@@ -292,14 +292,20 @@ class CircularLinkedList {
         Team minTeam = null;
         int minPoints = Integer.MAX_VALUE;
 
+        if (current == null) {
+            penjokiTeam = null;
+            return;
+        }
+
         do {
-            if (current != sofitaTeam && current != penjokiTeam && current.totalPoints < minPoints) {
+            if (current != sofitaTeam && current.totalPoints < minPoints) { // Removed "current != penjokiTeam"
                 minPoints = current.totalPoints;
                 minTeam = current;
             }
             current = current.next;
         } while (current != head);
 
+        // If no valid team found, set Penjoki to null
         penjokiTeam = minTeam;
     }
 
@@ -326,11 +332,18 @@ class CircularLinkedList {
             }
         }
     
-        // Do not set sofitaTeam to null here
         // Remove Penjoki's reference if necessary
         if (team == penjokiTeam) {
             penjokiTeam = null;
             movePenjokiAfterCaught();
+        }
+
+        if (team == sofitaTeam) {
+            sofitaTeam = findTeamWithHighestPoints();
+            if (sofitaTeam == null) {
+                TP2.out.println(-1);
+            }
+            // No output if Sofita supervises a new team
         }
     }
     
@@ -448,12 +461,19 @@ class CircularLinkedList {
             TP2.out.println(-1);
             return;
         }
+        
         Participant participant1 = sofitaTeam.findParticipant(participant1Id);
-        Team otherTeam = findTeamById(teamId);
-        if (participant1 == null || otherTeam == null) {
+        if (participant1 == null) {
             TP2.out.println(-1);
             return;
         }
+
+        Team otherTeam = findTeamById(teamId);
+        if (otherTeam == null) {
+            TP2.out.println(-1);
+            return;
+        }
+
         Participant participant2 = otherTeam.findParticipant(participant2Id);
         if (participant2 == null) {
             TP2.out.println(-1);
@@ -463,8 +483,8 @@ class CircularLinkedList {
         participant1.matches++;
         participant2.matches++;
     
-        int participant1_oldPoints = participant1.points;
-        int participant2_oldPoints = participant2.points;
+        int participant1OldPoints = participant1.points;
+        int participant2OldPoints = participant2.points;
     
         if (result == 0) {
             participant1.points += 1;
@@ -484,8 +504,8 @@ class CircularLinkedList {
             if (participant2.points < 0) participant2.points = 0;
     
             // Update team's totalPoints
-            sofitaTeam.totalPoints += (participant1.points - participant1_oldPoints);
-            otherTeam.totalPoints += (participant2.points - participant2_oldPoints);
+            sofitaTeam.totalPoints += (participant1.points - participant1OldPoints);
+            otherTeam.totalPoints += (participant2.points - participant2OldPoints);
     
             sofitaTeam.updateParticipant(participant1);
             otherTeam.updateParticipant(participant2);
@@ -503,8 +523,8 @@ class CircularLinkedList {
             if (participant1.points < 0) participant1.points = 0;
     
             // Update team's totalPoints
-            sofitaTeam.totalPoints += (participant1.points - participant1_oldPoints);
-            otherTeam.totalPoints += (participant2.points - participant2_oldPoints);
+            sofitaTeam.totalPoints += (participant1.points - participant1OldPoints);
+            otherTeam.totalPoints += (participant2.points - participant2OldPoints);
     
             sofitaTeam.updateParticipant(participant1);
             otherTeam.updateParticipant(participant2);
@@ -518,6 +538,7 @@ class CircularLinkedList {
                     sofitaTeam = findTeamWithHighestPoints();
                     if (sofitaTeam == null) {
                         TP2.out.println(-1);
+                        return;
                     }
                 }
             }
@@ -547,7 +568,7 @@ class CircularLinkedList {
         int eliminatedCount = 0;
         List<Team> teamsToEliminate = new ArrayList<>();
         Team current = head;
-        do {
+        do { // Memasukkan tim ke arraylist untuk di evaluasi
             if (current.totalPoints < minPoints) {
                 teamsToEliminate.add(current);
             }
@@ -562,6 +583,11 @@ class CircularLinkedList {
         // Update Sofita's position if her team was eliminated
         if (sofitaTeam != null && sofitaTeam.totalPoints < minPoints) {
             sofitaTeam = findTeamWithHighestPoints();
+        }
+
+        // Reassign Penjoki's supervision if necessary
+        if (penjokiTeam != null && (penjokiTeam.totalPoints < minPoints || penjokiTeam == sofitaTeam)) {
+            movePenjokiAfterCaught();
         }
 
         TP2.out.println(eliminatedCount);
@@ -585,7 +611,7 @@ class CircularLinkedList {
         // Collect teams into a list
         List<Team> teamList = new ArrayList<>();
         Team current = head;
-        do {
+        do { // Memasukkan node tim ke arraylist baru
             teamList.add(current);
             current = current.next;
         } while (current != head);
@@ -611,7 +637,7 @@ class CircularLinkedList {
         }
     
         // Update Sofita's position to the team with highest points
-        sofitaTeam = head;
+        sofitaTeam = findTeamWithHighestPoints();
     
         // Output the new team ID supervised by Sofita before checking for Penjoki
         if (sofitaTeam != null) {
@@ -631,7 +657,7 @@ class CircularLinkedList {
     
     // Custom sort teams based on total points, participant count, team ID
     public void customSortTeams(List<Team> teamList) {
-        // Implement a simple sorting algorithm (e.g., insertion sort)
+        // Implement a simple sorting algorithm (insertion sort)
         for (int i = 1; i < teamList.size(); i++) {
             Team key = teamList.get(i);
             int j = i - 1;
@@ -715,7 +741,7 @@ class CircularLinkedList {
         }
     
         // Update Sofita's position to the team with highest points
-        sofitaTeam = head;
+        sofitaTeam = findTeamWithHighestPoints();
     
         // No output here since it's after consequences
         // Check if Penjoki is in the same team as Sofita
