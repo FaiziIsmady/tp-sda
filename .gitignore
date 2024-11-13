@@ -6,6 +6,7 @@
 
 # Ignore .cph directory
 TP 1/.cph/
+TP 2/.cph/
 
 # Ignore specific Java file
 TP 1/TP111.java
