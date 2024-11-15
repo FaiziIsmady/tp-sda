@@ -34,7 +34,7 @@ public class TP2 {
             points[i] = in.nextInt();
         }
 
-        // Initialize teams and participants
+        // Inisialisasi tim dan pemain
         int pointIndex = 0;
         for (int i = 0; i < M; i++) {
             int teamSize = teamSizes[i];
@@ -46,10 +46,9 @@ public class TP2 {
             teams.addTeam(team);
         }
 
-        // Initialize Sofita and Penjoki
+        // Inisialisasi Sofita dan Penjoki
         teams.initializeSofitaAndPenjoki();
 
-        // Read and process queries
         int Q = in.nextInt();
         for (int i = 0; i < Q; i++) {
             String query = in.next();
@@ -111,11 +110,9 @@ public class TP2 {
                     break;
             }
         }
-
         out.close();
     }
 
-    // InputReader class remains the same
     static class InputReader {
         public BufferedReader reader;
         public StringTokenizer tokenizer;
@@ -362,7 +359,7 @@ class CircularLinkedList {
 
     // QUERY A Menambah peserta pada tim yang sedang dawasi Sofita
     public void addParticipantsToSofitaTeam(int jumlahPeserta) {
-        if (sofitaTeam == null) { // Checker jika Sofita ga ngawasin tim apapun
+        if (sofitaTeam == null) { // Checker jika Sofita ga ngawasin tim apapun (Jumlah tim = 0)
             TP2.out.println(-1);
             return;
         }
@@ -383,7 +380,6 @@ class CircularLinkedList {
         TP2.out.println(result);
     }
 
-    // Transfer points between participants in the supervised team
     // Transfer points between participants in the supervised team
     public void transferPoints(int senderId, int receiverId, int pointsToTransfer) {
         if (sofitaTeam == null) {
@@ -498,6 +494,7 @@ class CircularLinkedList {
             otherTeam.updateParticipant(participant2);
     
             TP2.out.println(participant1.points + " " + participant2.points);
+            
         } else if (result == 1) {
             participant1.points += 3;
             participant2.points -= 3;
@@ -517,6 +514,7 @@ class CircularLinkedList {
                 }
             }
             TP2.out.println(participant1.points);
+
         } else if (result == -1) {
             participant2.points += 3;
             participant1.points -= 3;
@@ -638,20 +636,20 @@ class CircularLinkedList {
     
         // Update Sofita's position to the team with highest points
         sofitaTeam = findTeamWithHighestPoints();
-    
-        // Output the new team ID supervised by Sofita before checking for Penjoki
-        if (sofitaTeam != null) {
-            TP2.out.println(sofitaTeam.teamId);
-        } else {
-            TP2.out.println(-1);
-        }
-    
+
         // Check if Penjoki is in the same team as Sofita
         if (penjokiTeam != null && sofitaTeam == penjokiTeam) {
             sofitaTeam.cheaterCaughtCount++;
             applyPenjokiConsequences(sofitaTeam);
             movePenjokiAfterCaught();
             // Do not output the team ID again here
+        }
+    
+        // Output the new team ID supervised by Sofita before checking for Penjoki
+        if (sofitaTeam != null) {
+            TP2.out.println(sofitaTeam.teamId);
+        } else {
+            TP2.out.println(-1);
         }
     }       
     
@@ -705,6 +703,11 @@ class CircularLinkedList {
             penjokiTeam = targetTeam;
         }
 
+        if (penjokiTeam == null) {
+            TP2.out.println(-1);
+            return;
+        }
+
         TP2.out.println(penjokiTeam.teamId);
     }
 
@@ -741,18 +744,18 @@ class CircularLinkedList {
         }
     
         // Update Sofita's position to the team with highest points
-        sofitaTeam = findTeamWithHighestPoints();
+        // sofitaTeam = findTeamWithHighestPoints();
     
         // No output here since it's after consequences
-        // Check if Penjoki is in the same team as Sofita
+        /*// Check if Penjoki is in the same team as Sofita
         if (penjokiTeam != null && sofitaTeam == penjokiTeam) {
             sofitaTeam.cheaterCaughtCount++;
             applyPenjokiConsequences(sofitaTeam);
             movePenjokiAfterCaught();
             // No output needed here
         }
+        */
     }
-    
 }
 
 class Team {
