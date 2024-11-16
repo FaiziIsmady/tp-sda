@@ -200,31 +200,24 @@ class CircularLinkedList {
             return;
         }
     
-        boolean validDirection = true;
         if (direction.equals("L")) {
             sofitaTeam = sofitaTeam.prev;
         } else if (direction.equals("R")) {
             sofitaTeam = sofitaTeam.next;
-        } else {
-            // Handle invalid direction input
-            TP2.out.println(-1);
-            validDirection = false;
         }
     
-        if (validDirection) {
-            // Check for Penjoki in the same team
-            if (sofitaTeam == penjokiTeam) {
-                sofitaTeam.cheaterCaughtCount++;
-                movePenjokiAfterCaught();
-                applyPenjokiConsequences(sofitaTeam);
-            }
-    
-            // Now, print the team ID that Sofita ends up supervising
-            if (sofitaTeam != null) {
-                TP2.out.println(sofitaTeam.teamId);
-            } else {
-                TP2.out.println(-1);
-            }
+        // Check for Penjoki in the same team
+        if (sofitaTeam == penjokiTeam) {
+            sofitaTeam.cheaterCaughtCount++;
+            movePenjokiAfterCaught();
+            applyPenjokiConsequences(sofitaTeam);
+        }
+
+        // Now, print the team ID that Sofita ends up supervising
+        if (sofitaTeam != null) {
+            TP2.out.println(sofitaTeam.teamId);
+        } else {
+            TP2.out.println(-1);
         }
     }               
 
@@ -238,19 +231,7 @@ class CircularLinkedList {
             if (team.participantCount < 7) {
                 eliminateTeam(team);
 
-                // Conditional kalo yang diremove timSofita udah dihandle dieliminateTeam
-
-                /* 
-                // Check if the eliminated team was supervised by Sofita
-                if (team == sofitaTeam) {
-                    sofitaTeam = findTeamWithHighestPoints();
-                    // Only output if there is no team left for Sofita
-                    if (sofitaTeam == null) {
-                        TP2.out.println(-1);
-                    }
-                    // No output if Sofita supervises a new team
-                }
-                */
+                // Conditional kalo yang diremove timSofita udah dihandle di eliminateTeam
 
             } else {
                 // Reorder teams since totalPoints and participantCounts have changed
@@ -269,19 +250,8 @@ class CircularLinkedList {
             // Eliminate the team
             eliminateTeam(team);
 
-            // Conditional kalo yang diremove timSofita udah dihandle dieliminateTeam
+            // Conditional kalo yang diremove timSofita udah dihandle di eliminateTeam
 
-            /* 
-            // Check if the eliminated team was supervised by Sofita
-            if (team == sofitaTeam) {
-                sofitaTeam = findTeamWithHighestPoints();
-                // Only output if there is no team left for Sofita
-                if (sofitaTeam == null) {
-                    TP2.out.println(-1);
-                }
-                // No output if Sofita supervises a new team
-            } 
-            */
             // Reorder teams since teams have changed
             reorderTeamsAfterConsequences();
             // Do not output the team ID here
@@ -336,18 +306,18 @@ class CircularLinkedList {
             }
         }
     
-        // Remove Penjoki's reference if necessary
-        if (team == penjokiTeam) {
-            penjokiTeam = null;
-            movePenjokiAfterCaught();
-        }
-
         if (team == sofitaTeam) {
             sofitaTeam = findTeamWithHighestPoints();
             if (sofitaTeam == null) {
                 TP2.out.println(-1);
             }
             // No output if Sofita supervises a new team
+        }
+        
+        // Remove Penjoki's reference if necessary
+        if (team == penjokiTeam) {
+            penjokiTeam = null;
+            movePenjokiAfterCaught();
         }
     }
     
@@ -539,12 +509,8 @@ class CircularLinkedList {
                 // Check if sofitaTeam needs to be eliminated
                 if (sofitaTeam.participantCount < 7) {
                     eliminateTeam(sofitaTeam);
-                    // Update sofitaTeam reference
-                    sofitaTeam = findTeamWithHighestPoints();
-                    if (sofitaTeam == null) {
-                        TP2.out.println(-1);
-                        return;
-                    }
+                    
+                    // Conditional kalo yang diremove timSofita udah dihandle dieliminateTeam
                 }
             }
             TP2.out.println(participant2.points);
