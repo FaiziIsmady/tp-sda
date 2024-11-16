@@ -215,8 +215,8 @@ class CircularLinkedList {
             // Check for Penjoki in the same team
             if (sofitaTeam == penjokiTeam) {
                 sofitaTeam.cheaterCaughtCount++;
-                applyPenjokiConsequences(sofitaTeam);
                 movePenjokiAfterCaught();
+                applyPenjokiConsequences(sofitaTeam);
             }
     
             // Now, print the team ID that Sofita ends up supervising
@@ -238,6 +238,9 @@ class CircularLinkedList {
             if (team.participantCount < 7) {
                 eliminateTeam(team);
 
+                // Conditional kalo yang diremove timSofita udah dihandle dieliminateTeam
+
+                /* 
                 // Check if the eliminated team was supervised by Sofita
                 if (team == sofitaTeam) {
                     sofitaTeam = findTeamWithHighestPoints();
@@ -247,6 +250,7 @@ class CircularLinkedList {
                     }
                     // No output if Sofita supervises a new team
                 }
+                */
 
             } else {
                 // Reorder teams since totalPoints and participantCounts have changed
@@ -265,6 +269,9 @@ class CircularLinkedList {
             // Eliminate the team
             eliminateTeam(team);
 
+            // Conditional kalo yang diremove timSofita udah dihandle dieliminateTeam
+
+            /* 
             // Check if the eliminated team was supervised by Sofita
             if (team == sofitaTeam) {
                 sofitaTeam = findTeamWithHighestPoints();
@@ -273,11 +280,11 @@ class CircularLinkedList {
                     TP2.out.println(-1);
                 }
                 // No output if Sofita supervises a new team
-            } else {
-                // Reorder teams since teams have changed
-                reorderTeamsAfterConsequences();
-                // Do not output the team ID here
-            }
+            } 
+            */
+            // Reorder teams since teams have changed
+            reorderTeamsAfterConsequences();
+            // Do not output the team ID here
         }
         // Do not output the team ID here unless the team was eliminated and Sofita has no team left
     }
@@ -578,16 +585,6 @@ class CircularLinkedList {
             eliminatedCount++;
         }
 
-        // Update Sofita's position if her team was eliminated
-        if (sofitaTeam != null && sofitaTeam.totalPoints < minPoints) {
-            sofitaTeam = findTeamWithHighestPoints();
-        }
-
-        // Reassign Penjoki's supervision if necessary
-        if (penjokiTeam != null && (penjokiTeam.totalPoints < minPoints || penjokiTeam == sofitaTeam)) {
-            movePenjokiAfterCaught();
-        }
-
         TP2.out.println(eliminatedCount);
     }
 
@@ -640,8 +637,8 @@ class CircularLinkedList {
         // Check if Penjoki is in the same team as Sofita
         if (penjokiTeam != null && sofitaTeam == penjokiTeam) {
             sofitaTeam.cheaterCaughtCount++;
-            applyPenjokiConsequences(sofitaTeam);
             movePenjokiAfterCaught();
+            applyPenjokiConsequences(sofitaTeam);
             // Do not output the team ID again here
         }
     
@@ -742,19 +739,6 @@ class CircularLinkedList {
                 team.next = teamList.get(i + 1);
             }
         }
-    
-        // Update Sofita's position to the team with highest points
-        // sofitaTeam = findTeamWithHighestPoints();
-    
-        // No output here since it's after consequences
-        /*// Check if Penjoki is in the same team as Sofita
-        if (penjokiTeam != null && sofitaTeam == penjokiTeam) {
-            sofitaTeam.cheaterCaughtCount++;
-            applyPenjokiConsequences(sofitaTeam);
-            movePenjokiAfterCaught();
-            // No output needed here
-        }
-        */
     }
 }
 
