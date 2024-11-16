@@ -207,7 +207,7 @@ class CircularLinkedList {
         }
     
         // Check for Penjoki in the same team
-        if (sofitaTeam == penjokiTeam) {
+        if (penjokiTeam != null && (sofitaTeam == penjokiTeam)) {
             sofitaTeam.cheaterCaughtCount++;
             movePenjokiAfterCaught();
             applyPenjokiConsequences(sofitaTeam);
@@ -229,9 +229,15 @@ class CircularLinkedList {
 
             // After removing participants, check if team needs to be eliminated
             if (team.participantCount < 7) {
-                eliminateTeam(team);
+                eliminateTeamNoChecker(team);
 
-                // Conditional kalo yang diremove timSofita udah dihandle di eliminateTeam
+                if (team == sofitaTeam) {
+                    sofitaTeam = findTeamWithHighestPoints();
+                    // Only output if there is no team left for Sofita
+                    if (sofitaTeam == null) {
+                        TP2.out.println(-1);
+                    }
+                }
 
             } else {
                 // Reorder teams since totalPoints and participantCounts have changed
@@ -248,10 +254,15 @@ class CircularLinkedList {
             // Do not output the team ID here
         } else if (count == 3) {
             // Eliminate the team
-            eliminateTeam(team);
+            eliminateTeamNoChecker(team);
 
-            // Conditional kalo yang diremove timSofita udah dihandle di eliminateTeam
-
+            if (team == sofitaTeam) {
+                sofitaTeam = findTeamWithHighestPoints();
+                // Only output if there is no team left for Sofita
+                if (sofitaTeam == null) {
+                    TP2.out.println(-1);
+                }
+            }
             // Reorder teams since teams have changed
             reorderTeamsAfterConsequences();
             // Do not output the team ID here
@@ -283,7 +294,7 @@ class CircularLinkedList {
         penjokiTeam = minTeam;
     }
 
-    public void eliminateTeam(Team team) {
+    public void eliminateTeamChecker(Team team) {
         // Remove the team from the linked list
         if (team == head && team == tail) {
             // Only one team left
@@ -318,6 +329,30 @@ class CircularLinkedList {
         if (team == penjokiTeam) {
             penjokiTeam = null;
             movePenjokiAfterCaught();
+        }
+    }
+
+    public void eliminateTeamNoChecker(Team team) {
+        // Remove the team from the linked list
+        if (team == head && team == tail) {
+            // Only one team left
+            head = null;
+            tail = null;
+        } else if (team.next == team.prev) {
+            // Only two teams left, and one is being eliminated
+            head = team.next;
+            tail = team.next;
+            team.next.next = team.next;
+            team.next.prev = team.next;
+        } else {
+            team.prev.next = team.next;
+            team.next.prev = team.prev;
+            if (team == head) {
+                head = team.next;
+            }
+            if (team == tail) {
+                tail = team.prev;
+            }
         }
     }
     
@@ -372,14 +407,9 @@ class CircularLinkedList {
 
     // Membuat tim baru
     public void createNewTeam(String position) {
-        // Validate position input
-        if (!position.equals("L") && !position.equals("R")) {
-            TP2.out.println(-1);
-            return;
-        }
-
         // Create a new team with seven participants, each with 1 point
         Team newTeam = new Team(TP2.teamIdCounter++);
+
         for (int i = 0; i < 7; i++) { // Tim terinisialisasi berisi 7 orang
             Participant participant = new Participant(TP2.participantIdCounter++, 1);
             newTeam.addParticipant(participant);
@@ -484,10 +514,13 @@ class CircularLinkedList {
             sofitaTeam.updateParticipant(participant1);
             otherTeam.updateParticipant(participant2);
     
-            if (participant2.points == 0) {
+            if (participant2.points <= 0) {
                 otherTeam.removeParticipant(participant2);
                 if (otherTeam.participantCount < 7) {
-                    eliminateTeam(otherTeam);
+                    eliminateTeamNoChecker(otherTeam);
+                    if (otherTeam == penjokiTeam) { // Gaperlu cek sofita karena pasti bukan tim sofita
+                        movePenjokiAfterCaught();
+                    }
                 }
             }
             TP2.out.println(participant1.points);
@@ -504,13 +537,20 @@ class CircularLinkedList {
             sofitaTeam.updateParticipant(participant1);
             otherTeam.updateParticipant(participant2);
     
-            if (participant1.points == 0) {
+            if (participant1.points <= 0) {
                 sofitaTeam.removeParticipant(participant1);
                 // Check if sofitaTeam needs to be eliminated
                 if (sofitaTeam.participantCount < 7) {
-                    eliminateTeam(sofitaTeam);
-                    
-                    // Conditional kalo yang diremove timSofita udah dihandle dieliminateTeam
+                    eliminateTeamNoChecker(sofitaTeam);
+                    sofitaTeam = findTeamWithHighestPoints();
+                    if (sofitaTeam == null) {
+                        TP2.out.println(-1);
+                    }
+                    if (penjokiTeam != null && (sofitaTeam == penjokiTeam)) {
+                        sofitaTeam.cheaterCaughtCount++;
+                        movePenjokiAfterCaught();
+                        applyPenjokiConsequences(sofitaTeam);
+                    }            
                 }
             }
             TP2.out.println(participant2.points);
@@ -546,9 +586,34 @@ class CircularLinkedList {
             current = current.next;
         } while (current != head);
 
+        boolean sofitaEliminated = false;
+        boolean penjokiEliminated = false;
+
         for (Team team : teamsToEliminate) {
-            eliminateTeam(team);
+            eliminateTeamNoChecker(team); // Bismillah
             eliminatedCount++;
+            if (team == sofitaTeam) {
+                sofitaEliminated = true;
+            } else if (team == penjokiTeam) {
+                penjokiEliminated = true;
+            }
+        }
+
+        if (penjokiEliminated) {
+            movePenjokiAfterCaught();
+        }
+
+        if (sofitaEliminated) {
+            sofitaTeam = findTeamWithHighestPoints();
+            if (sofitaTeam == null) {
+                TP2.out.println(-1);
+            }
+        }
+
+        if (penjokiTeam != null && (sofitaTeam == penjokiTeam)) {
+            sofitaTeam.cheaterCaughtCount++;
+            movePenjokiAfterCaught();
+            applyPenjokiConsequences(sofitaTeam);
         }
 
         TP2.out.println(eliminatedCount);
@@ -601,7 +666,7 @@ class CircularLinkedList {
         sofitaTeam = findTeamWithHighestPoints();
 
         // Check if Penjoki is in the same team as Sofita
-        if (penjokiTeam != null && sofitaTeam == penjokiTeam) {
+        if (penjokiTeam != null && (sofitaTeam == penjokiTeam)) {
             sofitaTeam.cheaterCaughtCount++;
             movePenjokiAfterCaught();
             applyPenjokiConsequences(sofitaTeam);
