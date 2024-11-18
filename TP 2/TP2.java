@@ -272,64 +272,25 @@ class CircularLinkedList {
 
     // Move Penjoki after being caught
     public void movePenjokiAfterCaught() {
-        // Penjoki is thrown out and moves to the team with the lowest total points not supervised by Sofita
-        Team current = head;
-        Team minTeam = null;
-        int minPoints = Integer.MAX_VALUE;
-
-        if (current == null) {
+        if (head == null) {
             penjokiTeam = null;
             return;
         }
 
+        Team current = head;
+        Team minTeam = null;
+
         do {
-            if (current != sofitaTeam && current.totalPoints < minPoints) { // Removed "current != penjokiTeam"
-                minPoints = current.totalPoints;
-                minTeam = current;
+            if (current != sofitaTeam) { // Exclude Sofita's team
+                if (minTeam == null || compareTeamsForPenjoki(current, minTeam) < 0) {
+                    minTeam = current;
+                }
             }
             current = current.next;
         } while (current != head);
 
-        // If no valid team found, set Penjoki to null
+        // Assign Penjoki to the found team
         penjokiTeam = minTeam;
-    }
-
-    public void eliminateTeamChecker(Team team) {
-        // Remove the team from the linked list
-        if (team == head && team == tail) {
-            // Only one team left
-            head = null;
-            tail = null;
-        } else if (team.next == team.prev) {
-            // Only two teams left, and one is being eliminated
-            head = team.next;
-            tail = team.next;
-            team.next.next = team.next;
-            team.next.prev = team.next;
-        } else {
-            team.prev.next = team.next;
-            team.next.prev = team.prev;
-            if (team == head) {
-                head = team.next;
-            }
-            if (team == tail) {
-                tail = team.prev;
-            }
-        }
-    
-        if (team == sofitaTeam) {
-            sofitaTeam = findTeamWithHighestPoints();
-            if (sofitaTeam == null) {
-                TP2.out.println(-1);
-            }
-            // No output if Sofita supervises a new team
-        }
-        
-        // Remove Penjoki's reference if necessary
-        if (team == penjokiTeam) {
-            penjokiTeam = null;
-            movePenjokiAfterCaught();
-        }
     }
 
     public void eliminateTeamNoChecker(Team team) {
@@ -361,7 +322,7 @@ class CircularLinkedList {
         Team current = head;
         Team maxTeam = head;
         do {
-            if (compareTeams(current, maxTeam) < 0) {
+            if (compareTeamsForSofita(current, maxTeam) < 0) {
                 maxTeam = current;
             }
             current = current.next;
@@ -454,10 +415,39 @@ class CircularLinkedList {
             }
         }
 
+        // After inserting the new team, check if Penjoki needs to be assigned
+        assignPenjokiIfNeeded();
+
         // Output the new team's ID
         TP2.out.println(newTeam.teamId);
     }
 
+    // Method to assign Penjoki when there are exactly two teams
+    private void assignPenjokiIfNeeded() {
+        // Count the total number of teams
+        int totalTeams = 0;
+        Team current = head;
+        if (current != null) {
+            do {
+                totalTeams++;
+                current = current.next;
+            } while (current != head);
+        }
+
+        // If there are exactly two teams and Penjoki is not assigned yet
+        if (totalTeams == 2 && penjokiTeam == null) {
+            // Assign Penjoki to the team not supervised by Sofita
+            Team otherTeam;
+            if (sofitaTeam.next != sofitaTeam) {
+                otherTeam = sofitaTeam.next;
+            } else {
+                otherTeam = null;
+            }
+            if (otherTeam != null) {
+                penjokiTeam = otherTeam;
+            }
+        }
+    }
 
     public void simulateMatch(int participant1Id, int participant2Id, int teamId, int result) {
         if (sofitaTeam == null) {
@@ -605,9 +595,6 @@ class CircularLinkedList {
 
         if (sofitaEliminated) {
             sofitaTeam = findTeamWithHighestPoints();
-            if (sofitaTeam == null) {
-                TP2.out.println(-1);
-            }
         }
 
         if (penjokiTeam != null && (sofitaTeam == penjokiTeam)) {
@@ -687,7 +674,7 @@ class CircularLinkedList {
         for (int i = 1; i < teamList.size(); i++) {
             Team key = teamList.get(i);
             int j = i - 1;
-            while (j >= 0 && compareTeams(teamList.get(j), key) > 0) { // Changed < 0 to > 0
+            while (j >= 0 && compareTeamsForSofita(teamList.get(j), key) > 0) { // Changed < 0 to > 0
                 teamList.set(j + 1, teamList.get(j));
                 j--;
             }
@@ -696,7 +683,7 @@ class CircularLinkedList {
     }
 
 
-    public int compareTeams(Team a, Team b) {
+    public int compareTeamsForSofita(Team a, Team b) {
         if (a.totalPoints != b.totalPoints) {
             return Integer.compare(b.totalPoints, a.totalPoints); // Descending order
         } else if (a.participantCount != b.participantCount) {
@@ -704,7 +691,18 @@ class CircularLinkedList {
         } else {
             return Integer.compare(a.teamId, b.teamId); // Ascending order
         }
-    }    
+    }
+
+    // Comparator for Penjoki: Ascending totalPoints, Descending participantCount, Descending teamId
+    public int compareTeamsForPenjoki(Team a, Team b) {
+        if (a.totalPoints != b.totalPoints) {
+            return Integer.compare(a.totalPoints, b.totalPoints); // Ascending order
+        } else if (a.participantCount != b.participantCount) {
+            return Integer.compare(b.participantCount, a.participantCount); // Descending order
+        } else {
+            return Integer.compare(b.teamId, a.teamId); // Descending order
+        }
+    }
 
     // Move Penjoki to the left or right team
     public void movePenjoki(String direction) {
