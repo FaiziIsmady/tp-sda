@@ -172,26 +172,35 @@ class CircularLinkedList {
         }
     }
 
-    // Initialize Sofita and Penjoki positions
     public void initializeSofitaAndPenjoki() {
-        // Sofita starts supervising the first team
+        // Safeguard: Check if there are any teams to supervise
+        if (head == null) {
+            sofitaTeam = null;
+            penjokiTeam = null;
+            return;
+        }
+    
+        // Sofita starts supervising the head team
         sofitaTeam = head;
-
-        // Penjoki starts in the team with the lowest total points, not supervised by Sofita
+    
+        // Initialize Penjoki to null
+        penjokiTeam = null;
+    
         Team current = head;
-        Team minTeam = null;
-        int minPoints = Integer.MAX_VALUE;
-
         do {
-            if (current != sofitaTeam && current.totalPoints < minPoints) {
-                minPoints = current.totalPoints;
-                minTeam = current;
+            // Exclude Sofita's team
+            if (current != sofitaTeam) {
+                if (penjokiTeam == null || compareTeamsForPenjoki(current, penjokiTeam) < 0) {
+                    penjokiTeam = current;
+                }
             }
             current = current.next;
         } while (current != head);
-
-        // If all teams are supervised by Sofita (unlikely), Penjoki doesn't join any team
-        penjokiTeam = minTeam;
+    
+        // If Penjoki hasn't been assigned (i.e., only Sofita's team exists), set to null
+        if (penjokiTeam == sofitaTeam) {
+            penjokiTeam = null;
+        }
     }
 
     public void moveSofita(String direction) {
@@ -722,40 +731,7 @@ class CircularLinkedList {
         }
 
         TP2.out.println(penjokiTeam.teamId);
-    }
-
-    public void reorderTeamsAfterConsequences() {
-        if (head == null) {
-            return; // No output needed
-        }
-        // Collect teams into a list
-        List<Team> teamList = new ArrayList<>();
-        Team current = head;
-        do {
-            teamList.add(current);
-            current = current.next;
-        } while (current != head);
-    
-        // Custom sort the team list
-        customSortTeams(teamList);
-    
-        // Rebuild the circular linked list
-        for (int i = 0; i < teamList.size(); i++) {
-            Team team = teamList.get(i);
-            if (i == 0) {
-                head = team;
-                team.prev = teamList.get(teamList.size() - 1);
-            } else {
-                team.prev = teamList.get(i - 1);
-            }
-            if (i == teamList.size() - 1) {
-                tail = team;
-                team.next = teamList.get(0);
-            } else {
-                team.next = teamList.get(i + 1);
-            }
-        }
-    }
+    }   
 }
 
 class Team {
