@@ -238,20 +238,11 @@ class CircularLinkedList {
                         TP2.out.println(-1);
                     }
                 }
-
-            } else {
-                // Reorder teams since totalPoints and participantCounts have changed
-                reorderTeamsAfterConsequences();
-                // Do not output the team ID here
-            }
-
+            } 
         } else if (count == 2) {
             // Set all participants' points to 1
             team.setAllParticipantsPoints(1);
 
-            // Reorder teams since totalPoints have changed
-            reorderTeamsAfterConsequences();
-            // Do not output the team ID here
         } else if (count == 3) {
             // Eliminate the team
             eliminateTeamNoChecker(team);
@@ -263,11 +254,7 @@ class CircularLinkedList {
                     TP2.out.println(-1);
                 }
             }
-            // Reorder teams since teams have changed
-            reorderTeamsAfterConsequences();
-            // Do not output the team ID here
         }
-        // Do not output the team ID here unless the team was eliminated and Sofita has no team left
     }
 
     // Move Penjoki after being caught
@@ -504,7 +491,7 @@ class CircularLinkedList {
             sofitaTeam.updateParticipant(participant1);
             otherTeam.updateParticipant(participant2);
     
-            if (participant2.points <= 0) {
+            if (participant2.points == 0) {
                 otherTeam.removeParticipant(participant2);
                 if (otherTeam.participantCount < 7) {
                     eliminateTeamNoChecker(otherTeam);
@@ -527,7 +514,7 @@ class CircularLinkedList {
             sofitaTeam.updateParticipant(participant1);
             otherTeam.updateParticipant(participant2);
     
-            if (participant1.points <= 0) {
+            if (participant1.points == 0) {
                 sofitaTeam.removeParticipant(participant1);
                 // Check if sofitaTeam needs to be eliminated
                 if (sofitaTeam.participantCount < 7) {
