@@ -411,38 +411,8 @@ class CircularLinkedList {
             }
         }
 
-        // After inserting the new team, check if Penjoki needs to be assigned
-        assignPenjokiIfNeeded();
-
         // Output the new team's ID
         TP2.out.println(newTeam.teamId);
-    }
-
-    // Method to assign Penjoki when there are exactly two teams
-    private void assignPenjokiIfNeeded() {
-        // Count the total number of teams
-        int totalTeams = 0;
-        Team current = head;
-        if (current != null) {
-            do {
-                totalTeams++;
-                current = current.next;
-            } while (current != head);
-        }
-
-        // If there are exactly two teams and Penjoki is not assigned yet
-        if (totalTeams == 2 && penjokiTeam == null) {
-            // Assign Penjoki to the team not supervised by Sofita
-            Team otherTeam;
-            if (sofitaTeam.next != sofitaTeam) {
-                otherTeam = sofitaTeam.next;
-            } else {
-                otherTeam = null;
-            }
-            if (otherTeam != null) {
-                penjokiTeam = otherTeam;
-            }
-        }
     }
 
     public void simulateMatch(int participant1Id, int participant2Id, int teamId, int result) {
