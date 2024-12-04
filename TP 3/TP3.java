@@ -9,6 +9,11 @@ public class TP3 {
     public static int currentCity = 0; // Starting at city 1 (0-indexed)
     public static String currentPassword = "0000"; // Initial password
 
+    // Declare a global Union-Find instance
+    public static UnionFind globalUF;
+    // Cache for J queries
+    public static Map<Integer, Integer> jQueryCache = new HashMap<>();
+
     public static void main(String[] args) {
         InputStream inputStream = System.in;
         in = new InputReader(inputStream);
@@ -18,6 +23,9 @@ public class TP3 {
         // Read number of cities (V) and number of roads (E)
         int V = in.nextInt();
         int E = in.nextInt();
+
+        // Initialize globalUF once after reading V
+        globalUF = new UnionFind(V);
 
         // Initialize the graph as an adjacency list
         List<int[]>[] graph = new ArrayList[V];
@@ -48,36 +56,32 @@ public class TP3 {
         // Read number of queries (Q)
         int Q = in.nextInt();
 
-        // Precompute distances for all source cities used in R and F queries
-        // We'll collect all currentCity states before each R or F query
-        // However, since currentCity changes after M and J queries, precomputing isn't straightforward
-        // Instead, compute distances on the fly or optimize accordingly
-        // For simplicity, we'll compute distances on the fly when handling F queries
-
         // Precompute sizes for R queries using Union-Find for each energy from 1 to 100
         int MAX_ENERGY = 100;
         int[][] sizes = new int[V][MAX_ENERGY + 1]; // sizes[city][energy]
 
-        // Sort all roads by length ascending
-        allRoads.sort(Comparator.comparingInt(e -> e.l));
+        // Sort all roads by length ascendingly once
+        List<Edge> sortedRoads = new ArrayList<>(allRoads);
+        sortedRoads.sort(Comparator.comparingInt(e -> e.l));
 
-        // Initialize Union-Find
-        UnionFind uf = new UnionFind(V);
+        // Initialize a separate Union-Find instance for precomputing 'sizes'
+        UnionFind ufPrecompute = new UnionFind(V);
 
         int roadIndex = 0;
         for (int energy = 1; energy <= MAX_ENERGY; energy++) {
             // Process all roads with L <= energy
-            while (roadIndex < allRoads.size() && allRoads.get(roadIndex).l <= energy) {
-                Edge edge = allRoads.get(roadIndex);
-                uf.union(edge.u, edge.v);
+            while (roadIndex < sortedRoads.size() && sortedRoads.get(roadIndex).l <= energy) {
+                Edge edge = sortedRoads.get(roadIndex);
+                ufPrecompute.union(edge.u, edge.v);
                 roadIndex++;
             }
             // For each city, record the size of its connected component at this energy
             for (int city = 0; city < V; city++) {
-                sizes[city][energy] = uf.size(city);
+                sizes[city][energy] = ufPrecompute.size(city);
             }
         }
 
+        // Process each query directly using switch-case
         for (int i = 0; i < Q; i++) {
             String queryType = in.next();
             switch (queryType) {
@@ -99,7 +103,7 @@ public class TP3 {
 
                 case "J":
                     int start = in.nextInt() - 1;
-                    handleJQuery(start, allRoads, V);
+                    handleJQuery(start, sortedRoads, V);
                     break;
 
                 default:
@@ -110,7 +114,7 @@ public class TP3 {
         out.close();
     }
 
-    
+
     static class InputReader {
         public BufferedReader reader;
         public StringTokenizer tokenizer;
@@ -167,7 +171,7 @@ public class TP3 {
         int result = performMQuery(targetPassword, availableNumbers);
         out.println(result);
         if (result != -1) {
-            currentPassword = targetPassword; // Update password if successful
+            currentPassword = String.format("%04d", Integer.parseInt(targetPassword)); // Update password if successful
         }
         currentCity = id; // Move to the new city regardless of password success
     }
@@ -191,6 +195,7 @@ public class TP3 {
 
         while (!queue.isEmpty()) {
             int size = queue.size();
+            steps++;
             for (int i = 0; i < size; i++) {
                 int currentPass = queue.poll();
 
@@ -199,7 +204,7 @@ public class TP3 {
                     int appliedPass = applyNumber(currentPass, num);
 
                     if (appliedPass == target) {
-                        return steps + 1;
+                        return steps;
                     }
 
                     if (!visited[appliedPass]) {
@@ -208,7 +213,6 @@ public class TP3 {
                     }
                 }
             }
-            steps++;
         }
 
         return -1; // If target password is not reachable
@@ -225,28 +229,44 @@ public class TP3 {
         return newPass;
     }
 
-    public static void handleJQuery(int start, List<Edge> allRoads, int V) {
-        int result = performJQuery(start, allRoads, V);
+    public static void handleJQuery(int start, List<Edge> sortedRoads, int V) {
+        // Check if the result for this start city is already cached
+        if (jQueryCache.containsKey(start)) {
+            out.println(jQueryCache.get(start));
+            return;
+        }
+
+        int result = performJQuery(start, sortedRoads, V, globalUF);
+        // Cache the result
+        jQueryCache.put(start, result);
         out.println(result);
     }
 
-    public static int performJQuery(int start, List<Edge> allRoads, int V) {
-        // Initialize Union-Find for Kruskal's algorithm
-        UnionFind uf = new UnionFind(V);
+    public static int performJQuery(int start, List<Edge> sortedRoads, int V, UnionFind uf) {
+        // Reset Union-Find for this J query
+        uf.reset(V);
         int totalWeight = 0;
-
-        // Collect all roads connected to the starting city
+    
+        // Lists to hold connected and remaining roads
         List<Edge> connectedRoads = new ArrayList<>();
-        for (Edge edge : allRoads) {
+        List<Edge> remainingRoads = new ArrayList<>();
+
+        // Separate roads into connected and remaining
+        for (Edge edge : sortedRoads) {
             if (edge.u == start || edge.v == start) {
                 connectedRoads.add(edge);
+            } else {
+                remainingRoads.add(edge);
             }
         }
 
-        // Sort connectedRoads by length in ascending order
+        // Sort connected roads ascendingly
         connectedRoads.sort(Comparator.comparingInt(e -> e.l));
 
-        // Include roads connected to the starting city in the MST if they don't form a cycle
+        // Sort remaining roads ascendingly
+        remainingRoads.sort(Comparator.comparingInt(e -> e.l));
+
+        // Process connected roads first
         for (Edge edge : connectedRoads) {
             if (!uf.connected(edge.u, edge.v)) {
                 uf.union(edge.u, edge.v);
@@ -254,35 +274,24 @@ public class TP3 {
             }
         }
 
-        // Collect remaining roads (excluding those connected to the starting city)
-        List<Edge> remainingEdges = new ArrayList<>();
-        for (Edge edge : allRoads) {
-            if (edge.u != start && edge.v != start) {
-                remainingEdges.add(edge);
-            }
-        }
-
-        // Sort remaining edges by length in ascending order
-        remainingEdges.sort(Comparator.comparingInt(e -> e.l));
-
-        // Perform Kruskal's algorithm on the remaining edges
-        for (Edge edge : remainingEdges) {
+        // Then process remaining roads
+        for (Edge edge : remainingRoads) {
             if (!uf.connected(edge.u, edge.v)) {
                 uf.union(edge.u, edge.v);
                 totalWeight += edge.l;
             }
         }
 
-        // Check if all cities are connected
-        int root = uf.find(0);
-        for (int i = 1; i < V; i++) {
+        // Check if all cities are connected to the starting city
+        int root = uf.find(start);
+        for (int i = 0; i < V; i++) { // Check all cities
             if (uf.find(i) != root) {
                 return -1; // Not all cities are connected
             }
         }
 
         return totalWeight;
-    }
+    }    
 
     public static int[] dijkstra(int source, List<int[]>[] graph, int V) {
         int[] dist = new int[V];
@@ -316,13 +325,18 @@ public class TP3 {
         return dist;
     }
 
-    public static class HeapNode {
+    public static class HeapNode implements Comparable<HeapNode> {
         int node;
         int distance;
 
         public HeapNode(int node, int distance) {
             this.node = node;
             this.distance = distance;
+        }
+
+        @Override
+        public int compareTo(HeapNode other) {
+            return Integer.compare(this.distance, other.distance);
         }
     }
 
@@ -347,6 +361,15 @@ public class TP3 {
             parent = new int[size];
             rank = new int[size];
             this.size = new int[size];
+            reset(size); // Initialize using the reset method
+        }
+
+        /**
+         * Resets the Union-Find structure to its initial state.
+         *
+         * @param size The number of elements in the Union-Find structure.
+         */
+        public void reset(int size) {
             for(int i = 0; i < size; i++) {
                 parent[i] = i;
                 rank[i] = 0;
