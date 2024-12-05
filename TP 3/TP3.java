@@ -45,31 +45,8 @@ public class TP3 {
             availableNumbers.add(in.next());
         }
 
-        // Read number of queries (Q) and store all queries
+        // Read number of queries (Q)
         int Q = in.nextInt();
-        List<Query> queries = new ArrayList<>(Q);
-
-        for (int i = 0; i < Q; i++) {
-            String queryType = in.next();
-            if (queryType.equals("R")) {
-                int energy = in.nextInt();
-                queries.add(new Query(queryType, energy, -1, null));
-                // 'R' queries do not affect currentCity
-            } else if (queryType.equals("F")) {
-                int destination = in.nextInt() - 1;
-                queries.add(new Query(queryType, -1, destination, null));
-                // 'F' queries do not affect currentCity
-            } else if (queryType.equals("M")) {
-                int id = in.nextInt() - 1;
-                String password = in.next();
-                queries.add(new Query(queryType, -1, id, password));
-                // 'M' queries may change currentCity
-            } else if (queryType.equals("J")) {
-                int start = in.nextInt() - 1;
-                queries.add(new Query(queryType, -1, start, null));
-                // 'J' queries do not affect currentCity
-            }
-        }
 
         // Precompute sizes for R queries using Union-Find for each energy from 1 to 100
         int MAX_ENERGY = 100;
@@ -102,62 +79,80 @@ public class TP3 {
         int[] dist = dijkstra(currentCity, graph, V);
         distanceCache.put(currentCity, dist);
 
-        // Prepare a StringBuilder to batch output and improve I/O performance
-        StringBuilder sb = new StringBuilder();
-
         // Process each query sequentially
-        for (Query q : queries) {
-            String queryType = q.type;
-            if (queryType.equals("R")) {
-                int energy = q.energy;
-                int source = currentCity;
-                if (energy < 1 || energy > MAX_ENERGY) {
-                    sb.append("-1\n");
-                } else {
-                    int result = handleRQuery(source, energy, sizes);
-                    sb.append(result).append("\n");
-                }
-            } else if (queryType.equals("F")) {
-                int destination = q.destination;
-                int source = currentCity;
-                // Retrieve distances from the cache
-                dist = distanceCache.get(source);
-                int result = dist[destination] == Integer.MAX_VALUE ? -1 : dist[destination];
-                sb.append(result).append("\n");
-            } else if (queryType.equals("M")) {
-                int id = q.destination; // In 'M' query, 'destination' holds 'id'
-                String password = q.password;
-                int result = handleMQuery(id, password, availableNumbers, V);
-                sb.append(result).append("\n");
-                if (result != -1) {
-                    currentPassword = password; // Update the password if successful
-                }
-                currentCity = id; // Move to the new city regardless of password success
+        for (int i = 0; i < Q; i++) {
+            String queryType = in.next();
+            switch (queryType) {
+                case "R":
+                    int energy = in.nextInt();
+                    int sourceR = currentCity;
+                    if (energy < 1 || energy > MAX_ENERGY) {
+                        out.println("-1");
+                    } else {
+                        int resultR = handleRQuery(sourceR, energy, sizes);
+                        out.println(resultR);
+                    }
+                    break;
+                case "F":
+                    int destinationF = in.nextInt() - 1;
+                    int sourceF = currentCity;
+                    // Retrieve distances from the cache
+                    int[] distF = distanceCache.get(sourceF);
+                    if (distF == null) {
+                        out.println("-1");
+                    } else {
+                        if (distF[destinationF] == Integer.MAX_VALUE) {
+                            out.println("-1");
+                        } else {
+                            out.println(distF[destinationF]);
+                        }
+                    }
+                    break;
+                case "M":
+                    int idM = in.nextInt() - 1; // In 'M' query, 'destination' holds 'id'
+                    String passwordM = in.next();
+                    int resultM = handleMQuery(idM, passwordM, availableNumbers, V);
+                    out.println(resultM);
+                    if (resultM != -1) {
+                        currentPassword = passwordM; // Update the password if successful
+                    }
+                    currentCity = idM; // Move to the new city regardless of password success
 
-                // **Recompute distances from the new currentCity**
-                dist = distanceCache.get(currentCity);
-                if (dist == null) {
-                    dist = dijkstra(currentCity, graph, V);
-                    distanceCache.put(currentCity, dist);
-                }
-            } else if (queryType.equals("J")) {
-                int start = q.destination; // In 'J' query, 'destination' holds 'start'
-                int result = handleJQuery(allRoads, start, V);
-                sb.append(result).append("\n");
+                    // **Recompute distances from the new currentCity**
+                    int[] distM = distanceCache.get(currentCity);
+                    if (distM == null) {
+                        distM = dijkstra(currentCity, graph, V);
+                        distanceCache.put(currentCity, distM);
+                    }
+                    break;
+                case "J":
+                    int startJ = in.nextInt() - 1; // In 'J' query, 'destination' holds 'start'
+                    int resultJ = handleJQuery(allRoads, startJ, V);
+                    out.println(resultJ);
+                    break;
+                default:
+                    // Handle unexpected query types if necessary
+                    break;
             }
         }
 
-        // Output all results at once
-        out.print(sb.toString());
+        // Flush the output
+        out.flush();
         out.close();
     }
 
     public static int handleRQuery(int source, int energy, int[][] sizes) {
-        if (energy < 1 || energy > 100) return -1;
+        if (energy < 1 || energy > 100) {
+            return -1;
+        }
         // Size of connected component at energy E
         int componentSize = sizes[source][energy];
         // Number of cities that can be visited excluding the starting city
-        return componentSize > 1 ? componentSize - 1 : -1;
+        if (componentSize > 1) {
+            return componentSize - 1;
+        } else {
+            return -1;
+        }
     }
 
     public static int handleFQuery(int source, int destination, Map<Integer, int[]> distanceCache) {
@@ -165,7 +160,11 @@ public class TP3 {
         if (dist == null) {
             return -1; // Should not happen if distances are recomputed correctly
         }
-        return dist[destination] == Integer.MAX_VALUE ? -1 : dist[destination];
+        if (dist[destination] == Integer.MAX_VALUE) {
+            return -1;
+        } else {
+            return dist[destination];
+        }
     }
 
     public static int handleMQuery(int id, String targetPassword, List<String> availableNumbers, int V) {
@@ -224,10 +223,8 @@ public class TP3 {
         // Include all roads connected to the starting city
         for (Edge edge : allRoads) {
             if (edge.u == start || edge.v == start) {
-                if (!uf.connected(edge.u, edge.v)) {
-                    totalWeight += edge.l;
-                    uf.union(edge.u, edge.v); // Merge their endpoints
-                }
+                totalWeight += edge.l;
+                uf.union(edge.u, edge.v); // Merge their endpoints
             }
         }
 
@@ -398,20 +395,6 @@ public class TP3 {
                 throw new NoSuchElementException("No more tokens available");
             }
             return Integer.parseInt(token);
-        }
-    }
-
-    public static class Query {
-        String type;
-        int energy; // For R queries
-        int destination; // For F and J queries, and 'id' for M queries
-        String password; // For M queries
-
-        public Query(String type, int energy, int destination, String password) {
-            this.type = type;
-            this.energy = energy;
-            this.destination = destination;
-            this.password = password;
         }
     }
 }
