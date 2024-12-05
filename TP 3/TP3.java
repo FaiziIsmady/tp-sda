@@ -2,16 +2,12 @@ import java.io.*;
 import java.util.*;
 
 public class TP3 {
-    private static InputReader in;
-    private static PrintWriter out;
+    public static InputReader in;
+    public static PrintWriter out;
 
     // Current state variables
-    private static int currentCity = 0; // Starting at city 1 (0-indexed)
-    private static String currentPassword = "0000"; // Initial password
-
-    // Precomputed sizes for R queries
-    private static int[][] sizes; // sizes[city][energy]
-    private static final int MAX_ENERGY = 100;
+    public static int currentCity = 0; // Starting at city 0 (0-indexed)
+    public static String currentPassword = "0000"; // Initial password
 
     public static void main(String[] args) {
         InputStream inputStream = System.in;
@@ -49,52 +45,37 @@ public class TP3 {
             availableNumbers.add(in.next());
         }
 
-        // Read number of queries (Q)
+        // Read number of queries (Q) and store all queries
         int Q = in.nextInt();
+        List<Query> queries = new ArrayList<>(Q);
 
-        // Precompute sizes for R queries using Union-Find for each energy from 1 to 100
-        precomputeSizes(allRoads, V);
-
-        // Process each query using switch-case
         for (int i = 0; i < Q; i++) {
-            String query = in.next(); // Read the query type
-
-            switch (query) {
-                case "R":
-                    int energy = in.nextInt(); // R [ENERGI]
-                    handleRQuery(energy, V);
-                    break;
-
-                case "F":
-                    int destination = in.nextInt() - 1; // F [TUJUAN]
-                    handleFQuery(destination, graph, V);
-                    break;
-
-                case "M":
-                    int id = in.nextInt() - 1; // M [ID]
-                    String password = in.next(); // [PASSWORD]
-                    handleMQuery(id, password, availableNumbers, V);
-                    break;
-
-                case "J":
-                    int start = in.nextInt() - 1; // J [ID]
-                    handleJQuery(start, allRoads, V, graph);
-                    break;
-
-                default:
-                    // Invalid query type
-                    out.println("-1");
-                    break;
+            String queryType = in.next();
+            if (queryType.equals("R")) {
+                int energy = in.nextInt();
+                queries.add(new Query(queryType, energy, -1, null));
+                // 'R' queries do not affect currentCity
+            } else if (queryType.equals("F")) {
+                int destination = in.nextInt() - 1;
+                queries.add(new Query(queryType, -1, destination, null));
+                // 'F' queries do not affect currentCity
+            } else if (queryType.equals("M")) {
+                int id = in.nextInt() - 1;
+                String password = in.next();
+                queries.add(new Query(queryType, -1, id, password));
+                // 'M' queries may change currentCity
+            } else if (queryType.equals("J")) {
+                int start = in.nextInt() - 1;
+                queries.add(new Query(queryType, -1, start, null));
+                // 'J' queries do not affect currentCity
             }
         }
 
-        out.flush();
-        out.close();
-    }
+        // Precompute sizes for R queries using Union-Find for each energy from 1 to 100
+        int MAX_ENERGY = 100;
+        int[][] sizes = new int[V][MAX_ENERGY + 1]; // sizes[city][energy]
 
-    private static void precomputeSizes(List<Edge> allRoads, int V) {
-        sizes = new int[V][MAX_ENERGY + 1]; // sizes[city][energy]
-        // Sort all roads by length ascendingly
+        // Sort all roads by length ascending
         allRoads.sort(Comparator.comparingInt(e -> e.l));
 
         // Initialize Union-Find
@@ -113,140 +94,163 @@ public class TP3 {
                 sizes[city][energy] = uf.size(city);
             }
         }
-    }
 
-    private static void handleRQuery(int energy, int V) {
-        if (energy < 1 || energy > MAX_ENERGY) {
-            out.println("-1");
-            return;
-        }
-        // Size of connected component at energy E for currentCity
-        int componentSize = sizes[currentCity][energy];
-        // Number of cities that can be visited excluding the starting city
-        if (componentSize > 1) {
-            out.println(componentSize - 1);
-        } else {
-            out.println("-1");
-        }
-    }
+        // Cache to store distance arrays for source cities
+        Map<Integer, int[]> distanceCache = new HashMap<>();
 
-    private static void handleFQuery(int destination, List<int[]>[] graph, int V) {
-        // Compute Dijkstra's from currentCity to destination
+        // Initially compute distances from the starting currentCity
         int[] dist = dijkstra(currentCity, graph, V);
-        if (dist[destination] == Integer.MAX_VALUE) {
-            out.println("-1");
-        } else {
-            out.println(dist[destination]);
+        distanceCache.put(currentCity, dist);
+
+        // Prepare a StringBuilder to batch output and improve I/O performance
+        StringBuilder sb = new StringBuilder();
+
+        // Process each query sequentially
+        for (Query q : queries) {
+            String queryType = q.type;
+            if (queryType.equals("R")) {
+                int energy = q.energy;
+                int source = currentCity;
+                if (energy < 1 || energy > MAX_ENERGY) {
+                    sb.append("-1\n");
+                } else {
+                    int result = handleRQuery(source, energy, sizes);
+                    sb.append(result).append("\n");
+                }
+            } else if (queryType.equals("F")) {
+                int destination = q.destination;
+                int source = currentCity;
+                // Retrieve distances from the cache
+                dist = distanceCache.get(source);
+                int result = dist[destination] == Integer.MAX_VALUE ? -1 : dist[destination];
+                sb.append(result).append("\n");
+            } else if (queryType.equals("M")) {
+                int id = q.destination; // In 'M' query, 'destination' holds 'id'
+                String password = q.password;
+                int result = handleMQuery(id, password, availableNumbers, V);
+                sb.append(result).append("\n");
+                if (result != -1) {
+                    currentPassword = password; // Update the password if successful
+                }
+                currentCity = id; // Move to the new city regardless of password success
+
+                // **Recompute distances from the new currentCity**
+                dist = distanceCache.get(currentCity);
+                if (dist == null) {
+                    dist = dijkstra(currentCity, graph, V);
+                    distanceCache.put(currentCity, dist);
+                }
+            } else if (queryType.equals("J")) {
+                int start = q.destination; // In 'J' query, 'destination' holds 'start'
+                int result = handleJQuery(allRoads, start, V);
+                sb.append(result).append("\n");
+            }
         }
+
+        // Output all results at once
+        out.print(sb.toString());
+        out.close();
     }
 
-    private static void handleMQuery(int id, String targetPassword, List<String> availableNumbers, int V) {
-        int result = performMQuery(targetPassword, availableNumbers);
-        out.println(result);
-        if (result != -1) {
-            currentPassword = targetPassword; // Update password if successful
-        }
-        currentCity = id; // Move to the new city regardless of password success
+    public static int handleRQuery(int source, int energy, int[][] sizes) {
+        if (energy < 1 || energy > 100) return -1;
+        // Size of connected component at energy E
+        int componentSize = sizes[source][energy];
+        // Number of cities that can be visited excluding the starting city
+        return componentSize > 1 ? componentSize - 1 : -1;
     }
 
-    private static int performMQuery(String targetPassword, List<String> availableNumbers) {
-        // Convert passwords to integer representation
-        int target = Integer.parseInt(targetPassword);
-        int current = Integer.parseInt(currentPassword);
+    public static int handleFQuery(int source, int destination, Map<Integer, int[]> distanceCache) {
+        int[] dist = distanceCache.get(source);
+        if (dist == null) {
+            return -1; // Should not happen if distances are recomputed correctly
+        }
+        return dist[destination] == Integer.MAX_VALUE ? -1 : dist[destination];
+    }
 
+    public static int handleMQuery(int id, String targetPassword, List<String> availableNumbers, int V) {
         // If the current password is already the target password, no steps are needed
-        if (current == target) {
+        if (currentPassword.equals(targetPassword)) {
             return 0;
         }
 
         // BFS to find the minimum number of steps to reach the target password
-        Queue<Integer> queue = new ArrayDeque<>();
-        boolean[] visited = new boolean[10000];
-        queue.add(current);
-        visited[current] = true;
+        Queue<String> queue = new ArrayDeque<>();
+        Set<String> visited = new HashSet<>();
+        queue.add(currentPassword);
+        visited.add(currentPassword);
         int steps = 0;
 
         while (!queue.isEmpty()) {
             int size = queue.size();
             steps++;
             for (int i = 0; i < size; i++) {
-                int currentPass = queue.poll();
+                String current = queue.poll();
 
                 // Try applying all available numbers
                 for (String num : availableNumbers) {
-                    int appliedPass = applyNumber(currentPass, num);
+                    String newPass = applyNumber(current, num);
 
-                    if (appliedPass == target) {
+                    if (newPass.equals(targetPassword)) {
+                        currentPassword = newPass; // Update the password if successful
                         return steps;
                     }
 
-                    if (!visited[appliedPass]) {
-                        visited[appliedPass] = true;
-                        queue.add(appliedPass);
+                    if (!visited.contains(newPass)) {
+                        visited.add(newPass);
+                        queue.add(newPass);
                     }
                 }
-            }
-            // To prevent infinite loops, set a reasonable limit (e.g., 10 steps)
-            if (steps > 10) {
-                break;
             }
         }
 
         return -1; // If target password is not reachable
     }
 
-    private static int applyNumber(int current, String num) {
-        int newPass = 0;
+    public static String applyNumber(String current, String num) {
+        StringBuilder newPass = new StringBuilder();
         for (int j = 0; j < 4; j++) {
-            int currentDigit = (current / (int) Math.pow(10, 3 - j)) % 10;
-            int numDigit = num.charAt(j) - '0';
-            int newDigit = (currentDigit + numDigit) % 10;
-            newPass = newPass * 10 + newDigit;
+            int sum = (current.charAt(j) - '0') + (num.charAt(j) - '0');
+            newPass.append(sum % 10);
         }
-        return newPass;
+        return newPass.toString();
     }
 
-    private static void handleJQuery(int start, List<Edge> allRoads, int V, List<int[]>[] graph) {
-        int result = performJQuery(start, allRoads, V);
-        out.println(result);
-    }
-
-    private static int performJQuery(int start, List<Edge> allRoads, int V) {
+    public static int handleJQuery(List<Edge> allRoads, int start, int V) {
         // Initialize Union-Find for Kruskal's algorithm
         UnionFind uf = new UnionFind(V);
         int totalWeight = 0;
 
-        // Collect all roads connected to the starting city
-        List<Edge> connectedRoads = new ArrayList<>();
-        List<Edge> remainingRoads = new ArrayList<>();
-
+        // Include all roads connected to the starting city
         for (Edge edge : allRoads) {
             if (edge.u == start || edge.v == start) {
-                connectedRoads.add(edge);
-            } else {
-                remainingRoads.add(edge);
+                if (!uf.connected(edge.u, edge.v)) {
+                    totalWeight += edge.l;
+                    uf.union(edge.u, edge.v); // Merge their endpoints
+                }
             }
         }
 
-        // Sort connectedRoads by length ascendingly
-        connectedRoads.sort(Comparator.comparingInt(e -> e.l));
-
-        // Include roads connected to the starting city in the MST if they don't form a cycle
-        for (Edge edge : connectedRoads) {
-            if (!uf.connected(edge.u, edge.v)) {
-                uf.union(edge.u, edge.v);
-                totalWeight += edge.l;
+        // Process remaining edges
+        // Exclude edges connected to the starting city
+        List<Edge> remainingEdges = new ArrayList<>();
+        for (Edge edge : allRoads) {
+            if (edge.u != start && edge.v != start) {
+                remainingEdges.add(edge);
             }
         }
 
-        // Sort remaining roads by length ascendingly
-        remainingRoads.sort(Comparator.comparingInt(e -> e.l));
+        // Sort remaining edges by length in ascending order
+        remainingEdges.sort(Comparator.comparingInt(e -> e.l));
 
-        // Perform Kruskal's algorithm on the remaining roads
-        for (Edge edge : remainingRoads) {
-            if (!uf.connected(edge.u, edge.v)) {
-                uf.union(edge.u, edge.v);
-                totalWeight += edge.l;
+        // Perform Kruskal's algorithm on the remaining edges
+        for (Edge edge : remainingEdges) {
+            int u = edge.u;
+            int v = edge.v;
+            int l = edge.l;
+            if (!uf.connected(u, v)) {
+                uf.union(u, v);
+                totalWeight += l;
             }
         }
 
@@ -261,34 +265,29 @@ public class TP3 {
         return totalWeight;
     }
 
-    private static int[] dijkstra(int source, List<int[]>[] graph, int V) {
+    public static int[] dijkstra(int source, List<int[]>[] graph, int V) {
         int[] dist = new int[V];
         Arrays.fill(dist, Integer.MAX_VALUE);
         dist[source] = 0;
 
-        // Initialize the optimized MinHeap
-        MinHeap heap = new MinHeap(V);
-        heap.insert(source, 0);
+        // Use PriorityQueue for Dijkstra's algorithm
+        PriorityQueue<Node> pq = new PriorityQueue<>(Comparator.comparingInt(node -> node.distance));
+        pq.add(new Node(source, 0));
 
         boolean[] visited = new boolean[V];
 
-        while (!heap.isEmpty()) {
-            HeapNode current = heap.extractMin();
-            if (current == null) break;
-            int currentCity = current.node;
-            int currentDist = current.distance;
-
+        while (!pq.isEmpty()) {
+            Node current = pq.poll();
+            int currentCity = current.city;
             if (visited[currentCity]) continue;
             visited[currentCity] = true;
-
-            // Early exit if destination is handled in handleFQuery
 
             for (int[] edge : graph[currentCity]) {
                 int neighbor = edge[0];
                 int length = edge[1];
-                if (!visited[neighbor] && currentDist + length < dist[neighbor]) {
-                    dist[neighbor] = currentDist + length;
-                    heap.insert(neighbor, dist[neighbor]);
+                if (!visited[neighbor] && dist[currentCity] + length < dist[neighbor]) {
+                    dist[neighbor] = dist[currentCity] + length;
+                    pq.add(new Node(neighbor, dist[neighbor]));
                 }
             }
         }
@@ -296,7 +295,18 @@ public class TP3 {
         return dist;
     }
 
-    static class Edge {
+    // Node class for PriorityQueue in Dijkstra's algorithm
+    public static class Node {
+        int city;
+        int distance;
+
+        public Node(int city, int distance) {
+            this.city = city;
+            this.distance = distance;
+        }
+    }
+
+    public static class Edge {
         int u;
         int v;
         int l;
@@ -308,7 +318,7 @@ public class TP3 {
         }
     }
 
-    static class UnionFind {
+    public static class UnionFind {
         int[] parent;
         int[] rank;
         int[] size;
@@ -317,10 +327,6 @@ public class TP3 {
             parent = new int[size];
             rank = new int[size];
             this.size = new int[size];
-            reset(size); // Initialize using the reset method
-        }
-
-        public void reset(int size) {
             for(int i = 0; i < size; i++) {
                 parent[i] = i;
                 rank[i] = 0;
@@ -328,15 +334,13 @@ public class TP3 {
             }
         }
 
-        // Find with path compression
         public int find(int x) {
             if(parent[x] != x){
-                parent[x] = find(parent[x]); // Path compression
+                parent[x] = find(parent[x]); // path compression
             }
             return parent[x];
         }
 
-        // Union by rank
         public void union(int x, int y) {
             int fx = find(x);
             int fy = find(y);
@@ -355,121 +359,59 @@ public class TP3 {
             }
         }
 
-        // Check if two nodes are connected
         public boolean connected(int x, int y){
             return find(x) == find(y);
         }
 
-        // Get the size of the connected component containing x
         public int size(int x){
             return size[find(x)];
         }
     }
 
-    static class HeapNode {
-        int node;
-        int distance;
-
-        public HeapNode(int node, int distance) {
-            this.node = node;
-            this.distance = distance;
-        }
-    }
-
-    static class MinHeap {
-        private HeapNode[] heap;
-        private int size;
-        private int capacity;
-
-        public MinHeap(int capacity) {
-            this.capacity = capacity;
-            this.size = 0;
-            heap = new HeapNode[capacity + 1]; // 1-based indexing
-            heap[0] = new HeapNode(-1, Integer.MIN_VALUE); // Dummy node
-        }
-
-        public boolean isEmpty() {
-            return size == 0;
-        }
-
-        public void insert(int node, int distance) {
-            if (size >= capacity) {
-                // Resize the heap array if needed
-                capacity *= 2;
-                heap = Arrays.copyOf(heap, capacity + 1);
-            }
-            heap[++size] = new HeapNode(node, distance);
-            siftUp(size);
-        }
-
-        public HeapNode extractMin() {
-            if (size == 0) {
-                return null;
-            }
-            HeapNode min = heap[1];
-            heap[1] = heap[size--];
-            siftDown(1);
-            return min;
-        }
-
-        private void siftUp(int idx) {
-            while (idx > 1 && heap[idx].distance < heap[idx / 2].distance) {
-                swap(idx, idx / 2);
-                idx = idx / 2;
-            }
-        }
-
-        private void siftDown(int idx) {
-            while (2 * idx <= size) {
-                int j = 2 * idx;
-                if (j < size && heap[j + 1].distance < heap[j].distance) {
-                    j++;
-                }
-                if (heap[idx].distance <= heap[j].distance) {
-                    break;
-                }
-                swap(idx, j);
-                idx = j;
-            }
-        }
-
-        private void swap(int i, int j) {
-            HeapNode temp = heap[i];
-            heap[i] = heap[j];
-            heap[j] = temp;
-        }
-    }
-
-    static class InputReader {
+    public static class InputReader {
         public BufferedReader reader;
         public StringTokenizer tokenizer;
 
         public InputReader(InputStream stream) {
-            reader = new BufferedReader(new InputStreamReader(stream), 32768);
+            reader = new BufferedReader(new InputStreamReader(stream),32768);
             tokenizer = null;
         }
 
-        public String next() {
-            while (tokenizer == null || !tokenizer.hasMoreTokens()) {
-                try {
+        public String next(){
+            while(tokenizer == null || !tokenizer.hasMoreTokens()){
+                try{
                     String line = reader.readLine();
-                    if (line == null) {
-                        return null; // End of input
+                    if(line == null){
+                        return null;
                     }
                     tokenizer = new StringTokenizer(line);
-                } catch (IOException e) {
+                }catch(IOException e){
                     throw new RuntimeException(e);
                 }
             }
             return tokenizer.nextToken();
         }
 
-        public int nextInt() {
+        public int nextInt(){
             String token = next();
-            if (token == null) {
+            if(token == null){
                 throw new NoSuchElementException("No more tokens available");
             }
             return Integer.parseInt(token);
+        }
+    }
+
+    public static class Query {
+        String type;
+        int energy; // For R queries
+        int destination; // For F and J queries, and 'id' for M queries
+        String password; // For M queries
+
+        public Query(String type, int energy, int destination, String password) {
+            this.type = type;
+            this.energy = energy;
+            this.destination = destination;
+            this.password = password;
         }
     }
 }
